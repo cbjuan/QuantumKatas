@@ -1,0 +1,55 @@
+================================================================================
+Qiskit Quantum Katas Dataset Validation
+================================================================================
+
+Total entries to validate: 350
+
+✗ BasicGates/1.10: FAILED
+Progress: 10/350 (8 passed, 1 failed)
+✗ BasicGates/2.3: FAILED
+✗ BasicGates/2.4: FAILED
+✗ BasicGates/2.5: FAILED
+✗ BasicGates/2.6: FAILED
+✗ DeutschJozsa/1.2: FAILED
+✗ DeutschJozsa/1.3: FAILED
+Progress: 20/350 (12 passed, 7 failed)
+✗ DeutschJozsa/1.4: FAILED
+✗ DeutschJozsa/2.1: FAILED
+✗ GroversAlgorithm/1.2: FAILED
+Progress: 30/350 (19 passed, 10 failed)
+Progress: 40/350 (29 passed, 10 failed)
+✗ Measurements/1.2: FAILED
+✗ Measurements/2.2: FAILED
+Progress: 50/350 (37 passed, 12 failed)
+✗ Measurements/2.3: FAILED
+✗ SimonsAlgorithm/1.2: FAILED
+Progress: 60/350 (45 passed, 14 failed)
+✗ Superposition/1.10: FAILED
+✗ Superposition/1.11: FAILED
+✗ Superposition/1.5: FAILED
+✗ Superposition/1.7: FAILED
+Progress: 70/350 (51 passed, 18 failed)
+✗ Teleportation/2.3: FAILED
+Progress: 80/350 (60 passed, 19 failed)
+✗ DistinguishUnitaries/1.10: FAILED
+Progress: 90/350 (69 passed, 20 failed)
+✗ DistinguishUnitaries/2.4: FAILED
+✗ RippleCarryAdder/1.1: FAILED
+✗ RippleCarryAdder/1.2: FAILED
+✗ RippleCarryAdder/1.5: FAILED
+Progress: 100/350 (75 passed, 24 failed)
+✗ RippleCarryAdder/2.1: FAILED
+✗ RippleCarryAdder/2.3: FAILED
+Progress: 110/350 (83 passed, 26 failed)
+✗ QFT/1.5: FAILED
+Progress: 120/350 (92 passed, 27 failed)
+✗ QFT/2.3: FAILED
+✗ QFT/2.4: FAILED
+Progress: 130/350 (100 passed, 29 failed)
+✗ Superposition/1.13: FAILED
+✗ Superposition/2.2: FAILED
+Progress: 140/350 (108 passed, 31 failed)
+Progress: 150/350 (118 passed, 31 failed)
+Progress: 160/350 (128 passed, 31 failed)
+Progress: 170/350 (138 passed, 31 failed)
+Progress: 180/350 (148 passed, 31 failed)
