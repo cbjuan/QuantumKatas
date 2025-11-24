@@ -53,3 +53,656 @@ Progress: 150/350 (118 passed, 31 failed)
 Progress: 160/350 (128 passed, 31 failed)
 Progress: 170/350 (138 passed, 31 failed)
 Progress: 180/350 (148 passed, 31 failed)
+Progress: 190/350 (158 passed, 31 failed)
+Progress: 200/350 (168 passed, 31 failed)
+Progress: 210/350 (178 passed, 31 failed)
+Progress: 220/350 (188 passed, 31 failed)
+Progress: 230/350 (198 passed, 31 failed)
+✗ CHSHGame/2.1: FAILED
+✗ CHSHGame/2.4: FAILED
+✗ CHSHGame/2.5: FAILED
+✗ GHZGame/1.3: FAILED
+Progress: 240/350 (204 passed, 35 failed)
+✗ SolveSATWithGrover/2.2: FAILED
+Progress: 250/350 (213 passed, 36 failed)
+✗ SolveSATWithGrover/3.1: FAILED
+✗ KeyDistribution_BB84/1.1: FAILED
+✗ KeyDistribution_BB84/1.2: FAILED
+✗ KeyDistribution_BB84/2.2: FAILED
+✗ KeyDistribution_BB84/2.4: FAILED
+Progress: 260/350 (218 passed, 41 failed)
+✗ KeyDistribution_BB84/3.2: FAILED
+✗ TruthTables/2: FAILED
+✗ TruthTables/3: FAILED
+✗ TruthTables/4: FAILED
+✗ TruthTables/6: FAILED
+Progress: 270/350 (223 passed, 46 failed)
+✗ TruthTables/9: FAILED
+✗ MagicSquareGame/1.2: FAILED
+✗ MagicSquareGame/1.3: FAILED
+✗ MagicSquareGame/2.1: FAILED
+✗ MagicSquareGame/2.3: FAILED
+Progress: 280/350 (228 passed, 51 failed)
+✗ MagicSquareGame/2.6: FAILED
+✗ DeutschJozsa/1.6: FAILED
+✗ DeutschJozsa/1.7: FAILED
+✗ DeutschJozsa/1.8: FAILED
+Progress: 290/350 (234 passed, 55 failed)
+✗ DeutschJozsa/4.1: FAILED
+✗ SimonsAlgorithm/1.4: FAILED
+✗ SimonsAlgorithm/2.2: FAILED
+✗ Superposition/1.12: FAILED
+✗ Superposition/2.5: FAILED
+Progress: 300/350 (239 passed, 60 failed)
+✗ Superposition/2.6: FAILED
+✗ Superposition/2.7: FAILED
+✗ QFT/2.6: FAILED
+✗ QFT/3.2: FAILED
+Progress: 310/350 (245 passed, 64 failed)
+✗ tutorials/SingleQubitGates/2: FAILED
+✗ tutorials/Oracles/1.3: FAILED
+✗ tutorials/MultiQubitGates/3: FAILED
+Progress: 320/350 (252 passed, 67 failed)
+✗ tutorials/MultiQubitSystems/2: FAILED
+✗ tutorials/MultiQubitSystems/3: FAILED
+✗ tutorials/Oracles/2.1: FAILED
+✗ tutorials/Oracles/3.2: FAILED
+Progress: 330/350 (258 passed, 71 failed)
+✗ tutorials/ExploringDeutschJozsaAlgorithm/1: FAILED
+✗ tutorials/ExploringDeutschJozsaAlgorithm/2: FAILED
+✗ tutorials/MultiQubitGates/1: FAILED
+✗ tutorials/MultiQubitGates/4: FAILED
+Progress: 340/350 (264 passed, 75 failed)
+Progress: 350/350 (274 passed, 75 failed)
+
+================================================================================
+VALIDATION SUMMARY
+================================================================================
+Total tests: 350
+Passed: 275 (78.6%)
+Failed: 75 (21.4%)
+
+================================================================================
+FAILED TASKS
+================================================================================
+
+BasicGates/1.10:
+  FAIL: Expected [ 0.        +0.j  0.70710678+0.j -0.70710678+0.j  0.        +0.j], got [ 0.        +0.j -0.70710678+0.j  0.70710678+0.j -0.        +0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpn_9kw9g7.py", line 57, in <module>
+    test_bell_state_change_3()
+  File "/tmp/tmpn_9kw9g7.py", l
+
+BasicGates/2.3:
+  FAIL: Expected [0.+0.j 0.+0.j 1.+0.j 0.+0.j], got [0.+0.j 1.+0.j 0.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmps6osz_vq.py", line 61, in <module>
+    test_two_qubit_gate_3()
+  File "/tmp/tmps6osz_vq.py", line 57, in test_two_qubit_gate_3
+    assert np.allclose(statevector2.data, 
+
+BasicGates/2.4:
+  FAIL: Expected [0.64699664+0.j 0.53916387+0.j 0.32349832+0.j 0.43133109+0.j], got [0.32349832+0.j 0.64699664+0.j 0.53916387+0.j 0.43133109+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpu964gyas.py", line 68, in <module>
+    test_two_qubit_gate_4()
+  File "/tmp/tmpu964gyas.py", line 45, in 
+
+BasicGates/2.5:
+  FAIL: Expected [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j], got [0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpo7qorz4f.py", line 82, in <module>
+    test_toffoli_gate()
+  File "/tmp/tmpo7qorz4f.py", line 51, in test_toffoli
+
+BasicGates/2.6:
+  FAIL: Expected [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j], got [0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmp93tb0iay.py", line 92, in <module>
+    test_fredkin_gate()
+  File "/tmp/tmp93tb0iay.py", line 36, in test_fredkin
+
+DeutschJozsa/1.2:
+  FAIL: One oracle should flip output in superposition
+Traceback (most recent call last):
+  File "/tmp/tmpmbw3v4lf.py", line 78, in <module>
+    test_oracle_one()
+  File "/tmp/tmpmbw3v4lf.py", line 57, in test_oracle_one
+    assert np.allclose(statevector3.data, expected3), "One oracle should flip out
+
+DeutschJozsa/1.3:
+  FAIL: Expected [0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j], got [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmp8ntz5pju.py", line 69, in <module>
+    test_oracle_kth_qubit()
+  File "/tmp/tmp8ntz5pju.py", line 52, in test_ora
+
+DeutschJozsa/1.4:
+  FAIL: Expected [0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j], got [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmp7uy4tcs9.py", line 71, in <module>
+    test_oracle_odd_number_of_ones()
+  File "/tmp/tmp7uy4tcs9.py", line 53, in
+
+DeutschJozsa/2.1:
+  FAIL: Expected [ 0.5+0.j -0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j -0.5+0.j], got [ 0.35355339+0.j  0.35355339+0.j  0.35355339+0.j  0.35355339+0.j
+ -0.35355339+0.j -0.35355339+0.j -0.35355339+0.j -0.35355339+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmphdiufa7y.py", line 62, i
+
+GroversAlgorithm/1.2:
+  FAIL: Expected target to flip for |101> pattern
+Traceback (most recent call last):
+  File "/tmp/tmpfbugglws.py", line 79, in <module>
+    test_oracle_alternating_bits()
+  File "/tmp/tmpfbugglws.py", line 53, in test_oracle_alternating_bits
+    assert abs(statevector1.data[11]) > 0.9, f"Expected targ
+
+Measurements/1.2:
+  FAIL: Expected no '1' results, got 18 out of 100 shots
+Traceback (most recent call last):
+  File "/tmp/tmp_9br0wgd.py", line 74, in <module>
+    test_initialize_qubit()
+  File "/tmp/tmp_9br0wgd.py", line 53, in test_initialize_qubit
+    assert counts['1'] == 0, f"Expected no '1' results, got {counts
+
+Measurements/2.2:
+  FAIL: Incorrectly identified |0> as |+> 20 times
+Traceback (most recent call last):
+  File "/tmp/tmptad27teb.py", line 106, in <module>
+    test_is_qubit_plus_zero_or_inconclusive_simple_usd()
+  File "/tmp/tmptad27teb.py", line 82, in test_is_qubit_plus_zero_or_inconclusive_simple_usd
+    assert zer
+
+Measurements/2.3:
+  FAIL: invalid literal for int() with base 10: ' '
+Traceback (most recent call last):
+  File "/tmp/tmp4f_gefmt.py", line 109, in <module>
+    test_is_qubit_not_in_abc()
+  File "/tmp/tmp4f_gefmt.py", line 89, in test_is_qubit_not_in_abc
+    result1 = is_qubit_not_in_abc(qc1, 0)
+              ^^^^^^^^^
+
+SimonsAlgorithm/1.2:
+  FAIL: Right shift of |110> should give output |011>
+Traceback (most recent call last):
+  File "/tmp/tmpyw6y6fqa.py", line 91, in <module>
+    test_oracle_bitwise_right_shift()
+  File "/tmp/tmpyw6y6fqa.py", line 59, in test_oracle_bitwise_right_shift
+    assert np.allclose(statevector2.data, expected
+
+Superposition/1.10:
+  FAIL: Expected [0.70710678+0.j 0.        +0.j 0.70710678+0.j 0.        +0.j], got [ 0.70710678+0.j  0.70710678+0.j  0.        +0.j -0.        +0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpqkfeg2hc.py", line 73, in <module>
+    test_even_odd_numbers_superposition()
+  File "/tmp/tmpqkfeg2hc
+
+Superposition/1.11:
+  FAIL: Expected [0.70710678+0.j 0.        +0.j 0.70710678+0.j 0.        +0.j], got [ 0.70710678+0.j  0.70710678+0.j  0.        +0.j -0.        +0.j]
+Traceback (most recent call last):
+  File "/tmp/tmp7fpc1d0e.py", line 56, in <module>
+    test_zero_and_bitstring_superposition()
+  File "/tmp/tmp7fpc1d
+
+Superposition/1.5:
+  FAIL: Expected [ 0.5+0.j   0. +0.5j -0.5+0.j  -0. -0.5j], got [ 0.5+0.j  -0.5+0.j   0. +0.5j  0. -0.5j]
+Traceback (most recent call last):
+  File "/tmp/tmpa39whzot.py", line 46, in <module>
+    test_all_basis_vectors_with_phases_two_qubits()
+  File "/tmp/tmpa39whzot.py", line 42, in test_all_basis_v
+
+Superposition/1.7:
+  FAIL: Expected [ 0.        +0.j  0.70710678+0.j -0.70710678+0.j  0.        +0.j], got [-0.        +0.j -0.70710678+0.j  0.70710678+0.j -0.        +0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpfa_g294o.py", line 69, in <module>
+    test_all_bell_states()
+  File "/tmp/tmpfa_g294o.py", line 
+
+Teleportation/2.3:
+  FAIL: Expected |-> state, got [-0.70710678+0.j  0.70710678+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmp2rrh7vl_.py", line 64, in <module>
+    test_reconstruct_message_psi_minus()
+  File "/tmp/tmp2rrh7vl_.py", line 60, in test_reconstruct_message_psi_minus
+    assert np.allclose(final_sta
+
+DistinguishUnitaries/1.10:
+  FAIL: Rz gate should return 0, got 1
+Traceback (most recent call last):
+  File "/tmp/tmp1qak5seq.py", line 64, in <module>
+    test_distinguish_rz_from_r1_angle()
+  File "/tmp/tmp1qak5seq.py", line 56, in test_distinguish_rz_from_r1_angle
+    assert result_rz == 0, f"Rz gate should return 0, got {re
+
+DistinguishUnitaries/2.4:
+  FAIL: Gate 0 should return 0, got 3
+Traceback (most recent call last):
+  File "/tmp/tmpcieqcsnx.py", line 85, in <module>
+    test_distinguish_two_qubit_unitaries()
+  File "/tmp/tmpcieqcsnx.py", line 81, in test_distinguish_two_qubit_unitaries
+    assert most_common == expected[i], f"Gate {i} should
+
+RippleCarryAdder/1.1:
+  FAIL: index 12 is out of bounds for axis 0 with size 8
+Traceback (most recent call last):
+  File "/tmp/tmp48op8frt.py", line 23, in <module>
+    test_lowest_bit_sum()
+  File "/tmp/tmp48op8frt.py", line 18, in test_lowest_bit_sum
+    assert abs(statevector.data[12]) > 0.99  # |1,1,0> state
+          
+
+RippleCarryAdder/1.2:
+  FAIL: index 15 is out of bounds for axis 0 with size 8
+Traceback (most recent call last):
+  File "/tmp/tmpyx39ls7f.py", line 22, in <module>
+    test_lowest_bit_carry()
+  File "/tmp/tmpyx39ls7f.py", line 17, in test_lowest_bit_carry
+    assert abs(statevector.data[15]) > 0.99  # |1,1,1> state
+      
+
+RippleCarryAdder/1.5:
+  FAIL: 
+Traceback (most recent call last):
+  File "/tmp/tmp6p4q73h8.py", line 24, in <module>
+    test_high_bit_carry()
+  File "/tmp/tmp6p4q73h8.py", line 19, in test_high_bit_carry
+    assert abs(statevector.data[15]) > 0.99  # |1,1,0,1> majority(1,1,0)=1
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+RippleCarryAdder/2.1:
+  FAIL: 
+Traceback (most recent call last):
+  File "/tmp/tmpgbfdi40j.py", line 21, in <module>
+    test_lowest_bit_sum_in_place()
+  File "/tmp/tmpgbfdi40j.py", line 16, in test_lowest_bit_sum_in_place
+    assert abs(statevector.data[2]) > 0.99  # |1,0> -> |1,1>
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+RippleCarryAdder/2.3:
+  FAIL: 
+Traceback (most recent call last):
+  File "/tmp/tmpzkd7pzo7.py", line 23, in <module>
+    test_high_bit_sum_in_place()
+  File "/tmp/tmpzkd7pzo7.py", line 18, in test_high_bit_sum_in_place
+    assert abs(statevector.data[7]) > 0.99  # |1,1,1> (1⊕0⊕1=0, then becomes 1)
+           ^^^^^^^^^^^^^^
+
+QFT/1.5:
+  FAIL: Expected [ 0.70710678+0.j  0.        +0.j -0.70710678+0.j  0.        +0.j], got [ 0.70710678+0.j -0.70710678+0.j  0.        +0.j  0.        +0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpyra81xfq.py", line 70, in <module>
+    test_binary_fraction_quantum_in_place()
+  File "/tmp/tmpyr
+
+QFT/2.3:
+  FAIL: Expected signs [ 1.+0.j -1.+0.j  1.+0.j -1.+0.j] or [-1.-0.j  1.-0.j -1.-0.j  1.-0.j], got [ 1.  1. -1. -1.]
+Traceback (most recent call last):
+  File "/tmp/tmp7r_aijoy.py", line 78, in <module>
+    test_prepare_alternating_state()
+  File "/tmp/tmp7r_aijoy.py", line 54, in test_prepare_alterna
+
+QFT/2.4:
+  FAIL: State |1> should have zero amplitude, got (0.7071067811865474+0j)
+Traceback (most recent call last):
+  File "/tmp/tmpiseiieq_.py", line 88, in <module>
+    test_prepare_equal_superposition_even_states()
+  File "/tmp/tmpiseiieq_.py", line 51, in test_prepare_equal_superposition_even_states
+    
+
+Superposition/1.13:
+  FAIL: 'duplicate qubit arguments'
+Traceback (most recent call last):
+  File "/tmp/tmp24koy6sh.py", line 109, in <module>
+    test_four_bitstring_superposition()
+  File "/tmp/tmp24koy6sh.py", line 76, in test_four_bitstring_superposition
+    qc = four_bitstring_superposition(qc, [0, 1, 2], bits)
+    
+
+Superposition/2.2:
+  FAIL: Expected magnitudes [0.70710678+0.j 0.5       +0.j 0.5       +0.j 0.5       +0.j], got [0.70710678 0.5        0.         0.5       ]
+Traceback (most recent call last):
+  File "/tmp/tmp5yxuvbf9.py", line 71, in <module>
+    test_controlled_rotation()
+  File "/tmp/tmp5yxuvbf9.py", line 50, in te
+
+CHSHGame/2.1:
+  FAIL: Expected [0.70710678+0.j 0.        +0.j 0.        +0.j 0.70710678+0.j
+ 0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j], got [0.70710678+0.j 0.        +0.j 0.        +0.j 0.        +0.j
+ 0.        +0.j 0.        +0.j 0.70710678+0.j 0.        +0.j]
+Traceback (most recent call last):
+
+CHSHGame/2.4:
+  FAIL: π/8 basis measurement should give consistent results
+Traceback (most recent call last):
+  File "/tmp/tmp6tl633l4.py", line 92, in <module>
+    test_bob_quantum()
+  File "/tmp/tmp6tl633l4.py", line 59, in test_bob_quantum
+    assert all(r == False for r in results), "π/8 basis measurement shoul
+
+CHSHGame/2.5:
+  FAIL: string index out of range
+Traceback (most recent call last):
+  File "/tmp/tmp0yqqyxgt.py", line 85, in <module>
+    test_play_quantum_chsh()
+  File "/tmp/tmp0yqqyxgt.py", line 69, in test_play_quantum_chsh
+    result = play_quantum_chsh(mock_alice_strategy, mock_bob_strategy)
+             ^^^^
+
+GHZGame/1.3:
+    File "/tmp/tmpj2z98eut.py", line 35
+    import random
+    ^
+IndentationError: expected an indented block after 'for' statement on line 33
+
+
+SolveSATWithGrover/2.2:
+  FAIL: Exactly-1 3-SAT with |100> should be satisfied
+Traceback (most recent call last):
+  File "/tmp/tmpm5gha2wh.py", line 204, in <module>
+    test_oracle_exactly1_3sat()
+  File "/tmp/tmpm5gha2wh.py", line 146, in test_oracle_exactly1_3sat
+    assert '1' in counts1, "Exactly-1 3-SAT with |100> shou
+
+SolveSATWithGrover/3.1:
+  Grovers algorithm success rate: 0.000
+Measurement counts: {'00': 1000}
+FAIL: Grovers algorithm test should succeed with reasonable probability
+Traceback (most recent call last):
+  File "/tmp/tmp15hn9gzu.py", line 87, in <module>
+    test_test_grovers_with_sat()
+  File "/tmp/tmp15hn9gzu.py", line 72,
+
+KeyDistribution_BB84/1.1:
+  FAIL: Expected [ 0.5+0.j  0.5+0.j -0.5+0.j -0.5+0.j], got [ 0.5+0.j -0.5+0.j  0.5+0.j -0.5+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpa9n4jnbn.py", line 76, in <module>
+    test_diagonal_basis()
+  File "/tmp/tmpa9n4jnbn.py", line 59, in test_diagonal_basis
+    assert np.allclose(stateve
+
+KeyDistribution_BB84/1.2:
+  FAIL: name 'job' is not defined
+Traceback (most recent call last):
+  File "/tmp/tmpihh6su93.py", line 79, in <module>
+    test_equal_superposition()
+  File "/tmp/tmpihh6su93.py", line 40, in test_equal_superposition
+    counts2 = job.result().get_counts()
+              ^^^
+NameError: name 'job' is n
+
+KeyDistribution_BB84/2.2:
+  FAIL: Expected [0.        +0.j 0.        +0.j 0.70710678+0.j 0.70710678+0.j], got [ 0.        +0.j  0.70710678+0.j -0.        +0.j  0.70710678+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmposqp86fh.py", line 104, in <module>
+    test_prepare_alices_qubits()
+  File "/tmp/tmposqp86fh.py", li
+
+KeyDistribution_BB84/2.4:
+  FAIL: Expected [True, True], got [True, True, True]
+Traceback (most recent call last):
+  File "/tmp/tmp6fdj2kdn.py", line 100, in <module>
+    test_generate_shared_key()
+  File "/tmp/tmp6fdj2kdn.py", line 94, in test_generate_shared_key
+    assert result8 == expected8, f"Expected {expected8}, got {r
+
+KeyDistribution_BB84/3.2:
+    File "/tmp/tmp1d51ziy5.py", line 7
+    def bb84_protocol_with_eavesdropper(, ClassicalRegistern_qubits: int, eve_probability: float = 1.0) -> Tuple[bool, list, list, float]:
+                                        ^
+SyntaxError: invalid syntax
+
+
+TruthTables/2:
+  FAIL: Assignment 001: expected 1, got 0
+Traceback (most recent call last):
+  File "/tmp/tmpad73hpka.py", line 53, in <module>
+    test_exactly_one_bit_true()
+  File "/tmp/tmpad73hpka.py", line 46, in test_exactly_one_bit_true
+    assert actual == expected, f"Assignment {assignment:03b}: expected {ex
+
+TruthTables/3:
+  FAIL: Assignment 010: expected 0, got 1
+Traceback (most recent call last):
+  File "/tmp/tmpcs5qsex8.py", line 53, in <module>
+    test_exactly_two_bits_true()
+  File "/tmp/tmpcs5qsex8.py", line 46, in test_exactly_two_bits_true
+    assert actual == expected, f"Assignment {assignment:03b}: expected {
+
+TruthTables/4:
+  FAIL: 
+Traceback (most recent call last):
+  File "/tmp/tmpu3idpr8f.py", line 60, in <module>
+    test_tt_and()
+  File "/tmp/tmpu3idpr8f.py", line 49, in test_tt_and
+    assert result2.bits == 0b00000000 and result2.num_vars == 3
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Asserti
+
+TruthTables/6:
+  FAIL: 
+Traceback (most recent call last):
+  File "/tmp/tmprlqo_7ta.py", line 66, in <module>
+    test_tt_xor()
+  File "/tmp/tmprlqo_7ta.py", line 50, in test_tt_xor
+    assert result2.bits == 0b01111100 and result2.num_vars == 3
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Asserti
+
+TruthTables/9:
+  FAIL: 
+Traceback (most recent call last):
+  File "/tmp/tmprdw5mfow.py", line 71, in <module>
+    test_all_minterms()
+  File "/tmp/tmprdw5mfow.py", line 60, in test_all_minterms
+    assert sorted(minterms5) == [1, 2, 4]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+
+
+MagicSquareGame/1.2:
+  FAIL: 
+Traceback (most recent call last):
+  File "/tmp/tmp7qml75wo.py", line 83, in <module>
+    test_win_condition()
+  File "/tmp/tmp7qml75wo.py", line 51, in test_win_condition
+    assert win_condition(0, 1, alice_row, bob_column) == True
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+MagicSquareGame/1.3:
+  FAIL: name 'test_alice_classical' is not defined
+Traceback (most recent call last):
+  File "/tmp/tmpufsle66z.py", line 105, in <module>
+    test_alice_classical()
+    ^^^^^^^^^^^^^^^^^^^^
+NameError: name 'test_alice_classical' is not defined
+
+
+MagicSquareGame/2.1:
+  FAIL: Expected amplitudes [0.5+0.j 0. +0.j 0. +0.j 0.5+0.j 0. +0.j 0. +0.j 0. +0.j 0. +0.j 0. +0.j
+ 0. +0.j 0. +0.j 0. +0.j 0.5+0.j 0. +0.j 0. +0.j 0.5+0.j], got [0.5 0.  0.  0.  0.  0.5 0.  0.  0.  0.  0.5 0.  0.  0.  0.  0.5]
+Traceback (most recent call last):
+  File "/tmp/tmp49nf9x8x.py", line 66
+
+MagicSquareGame/2.3:
+  FAIL: Expected [0.+0.j 0.+0.j 1.+0.j 0.+0.j], got [0.+0.j 1.+0.j 0.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpu4tyj9m_.py", line 93, in <module>
+    test_apply_magic_observables()
+  File "/tmp/tmpu4tyj9m_.py", line 55, in test_apply_magic_observables
+    assert np.allclose(np.ab
+
+MagicSquareGame/2.6:
+  FAIL: name 'test_alice_quantum' is not defined
+Traceback (most recent call last):
+  File "/tmp/tmpqp1xkwd9.py", line 156, in <module>
+    test_alice_quantum()
+    ^^^^^^^^^^^^^^^^^^
+NameError: name 'test_alice_quantum' is not defined
+
+
+DeutschJozsa/1.6:
+  FAIL: Expected [0.+0.j 1.+0.j 0.+0.j 0.+0.j], got [0.+0.j 0.+0.j 1.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpecz7r66n.py", line 101, in <module>
+    test_oracle_product_with_negation_function()
+  File "/tmp/tmpecz7r66n.py", line 85, in test_oracle_product_with_negation_function
+
+DeutschJozsa/1.7:
+  FAIL: Expected [0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j], got [0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmp4w0elx5r.py", line 106, in <module>
+    test_oracle_hamming_with_prefix()
+  File "/tmp/tmp4w0elx5r.py", line 62, 
+
+DeutschJozsa/1.8:
+  FAIL: Did not find expected state with majority input
+Traceback (most recent call last):
+  File "/tmp/tmpy_gvn6u4.py", line 122, in <module>
+    test_oracle_majority_function()
+  File "/tmp/tmpy_gvn6u4.py", line 118, in test_oracle_majority_function
+    assert found_correct_state, "Did not find expe
+
+DeutschJozsa/4.1:
+    File "/tmp/tmpidcgg9ob.py", line 150
+    simulator = AerSimulator()
+IndentationError: unexpected indent
+
+
+SimonsAlgorithm/1.4:
+  FAIL: Expected state |1010>, got [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j
+ 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpkee27ave.py", line 78, in <module>
+    test_oracle_multidimensional_operator_output()
+  File "/tmp/tm
+
+SimonsAlgorithm/2.2:
+  FAIL: Result [0, 1] should be orthogonal to secret [1, 1]
+Traceback (most recent call last):
+  File "/tmp/tmpw_rjl6l6.py", line 114, in <module>
+    test_simon_algorithm_quantum()
+  File "/tmp/tmpw_rjl6l6.py", line 107, in test_simon_algorithm_quantum
+    assert dot_product2 == 0, f"Result {result2}
+
+Superposition/1.12:
+  FAIL: Expected [0.        +0.j 0.70710678+0.j 0.70710678+0.j 0.        +0.j
+ 0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j], got [0.        +0.j 0.        +0.j 0.70710678+0.j 0.        +0.j
+ 0.70710678+0.j 0.        +0.j 0.        +0.j 0.        +0.j]
+Traceback (most recent call last):
+
+Superposition/2.5:
+  FAIL: Expected amplitudes [0.8660254  0.28867513 0.28867513 0.28867513], got [0.64549722 0.38729833 0.64549722 0.12909944]
+Traceback (most recent call last):
+  File "/tmp/tmpwihb90ls.py", line 70, in <module>
+    test_hardy_state()
+  File "/tmp/tmpwihb90ls.py", line 57, in test_hardy_state
+    asser
+
+Superposition/2.6:
+  FAIL: State 0010 should have non-zero amplitude
+Traceback (most recent call last):
+  File "/tmp/tmpt7oyc4sg.py", line 119, in <module>
+    test_wstate_power_of_two()
+  File "/tmp/tmpt7oyc4sg.py", line 109, in test_wstate_power_of_two
+    assert amplitudes4[i] > 0.1, f"State {i:04b} should have non-z
+
+Superposition/2.7:
+  FAIL: 'QuantumCircuit' object has no attribute 'ccry'
+Traceback (most recent call last):
+  File "/tmp/tmpib50ty5z.py", line 125, in <module>
+    test_wstate_arbitrary()
+  File "/tmp/tmpib50ty5z.py", line 106, in test_wstate_arbitrary
+    qc3 = wstate_arbitrary(qc3, [0, 1, 2])
+          ^^^^^^^^^^^^^
+
+QFT/2.6:
+  FAIL: 'unknown instruction: QFT'
+/tmp/tmprmm_mm41.py:56: DeprecationWarning: The class ``qiskit.circuit.library.basis_change.qft.QFT`` is deprecated as of Qiskit 2.1. It will be removed in Qiskit 3.0. ('Use qiskit.circuit.library.QFTGate or qiskit.synthesis.qft.synth_qft_full instead, for access to 
+
+QFT/3.2:
+  FAIL: Square root test failed: [5.00000000e-01 5.00000000e-01 2.06242691e-34 7.98921698e-33] vs [5.00000000e-01 2.50000000e-01 5.28699741e-34 2.50000000e-01]
+/tmp/tmpm1k1e717.py:43: DeprecationWarning: The class ``qiskit.circuit.library.basis_change.qft.QFT`` is deprecated as of Qiskit 2.1. It will 
+
+tutorials/SingleQubitGates/2:
+  FAIL: Expected [0.+0.j 0.+1.j], got [0.+1.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmp4yvgrv6a.py", line 69, in <module>
+    test_global_phase_i()
+  File "/tmp/tmp4yvgrv6a.py", line 52, in test_global_phase_i
+    assert np.allclose(final_state2, expected2), f"Expected {expected2}, g
+
+tutorials/Oracles/1.3:
+  FAIL: Test 2 failed: Expected [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j
+ 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j], got [0.00000000e+00+0.j 0.00000000e+00+0.j 0.00000000e+00+0.j
+ 0.00000000e+00+0.j 0.00000000e+00+0.j 0.00000000e+00+0.j
+ 0.00000000e+00+0.j 1.00000000e+00
+
+tutorials/MultiQubitGates/3:
+  FAIL: Expected [0.        +0.j         0.        +0.j         0.92387953+0.j
+ 0.        -0.38268343j], got [0.        +0.j         0.92387953+0.j         0.        +0.j
+ 0.        -0.38268343j]
+Traceback (most recent call last):
+  File "/tmp/tmpa60rp6jt.py", line 63, in <module>
+    test_controlled_
+
+tutorials/MultiQubitSystems/2:
+  FAIL: Expected [ 0.70710678+0.j -0.70710678+0.j  0.        +0.j  0.        +0.j], got [ 0.70710678+0.j  0.        +0.j -0.70710678+0.j -0.        +0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpvzuqqqve.py", line 48, in <module>
+    test_prepare_state2()
+  File "/tmp/tmpvzuqqqve.py", line 3
+
+tutorials/MultiQubitSystems/3:
+  FAIL: Expected [ 0.5+0.j -0.5+0.j  0.5+0.j -0.5+0.j], got [ 0.5+0.j  0.5+0.j -0.5+0.j -0.5+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmp0sou2t7n.py", line 39, in <module>
+    test_prepare_state3()
+  File "/tmp/tmp0sou2t7n.py", line 35, in test_prepare_state3
+    assert np.allclose(stateve
+
+tutorials/Oracles/2.1:
+  FAIL: 'Index 4 out of range for size 4.'
+Traceback (most recent call last):
+  File "/tmp/tmp6zc90hoe.py", line 51, in <module>
+    test_apply_marking_oracle_as_phase_oracle()
+  File "/tmp/tmp6zc90hoe.py", line 44, in test_apply_marking_oracle_as_phase_oracle
+    qc = apply_marking_oracle_as_phase_or
+
+tutorials/Oracles/3.2:
+  FAIL: Expected [-1.+0.j  0.+0.j  0.+0.j  0.+0.j], got [ 0.+0.j -1.+0.j  0.+0.j -0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmp30pg_m17.py", line 37, in <module>
+    test_kth_bit_oracle()
+  File "/tmp/tmp30pg_m17.py", line 33, in test_kth_bit_oracle
+    assert np.allclose(statevector.dat
+
+tutorials/ExploringDeutschJozsaAlgorithm/1:
+  FAIL: Expected [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j], got [0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpctclvxm6.py", line 49, in <module>
+    test_balanced_function_oracle()
+  File "/tmp/tmpctclvxm6.py", line 45, in 
+
+tutorials/ExploringDeutschJozsaAlgorithm/2:
+  FAIL: Expected [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j], got [0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpu31m_l0c.py", line 39, in <module>
+    test_constant_function_oracle()
+  File "/tmp/tmpu31m_l0c.py", line 35, in 
+
+tutorials/MultiQubitGates/1:
+  FAIL: Expected [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+1.j], got [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+1.j 0.+0.j 0.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmpmp59z73o.py", line 38, in <module>
+    test_compound_gate()
+  File "/tmp/tmpmp59z73o.py", line 34, in test_compou
+
+tutorials/MultiQubitGates/4:
+  FAIL: Expected [0.+0.j 0.+0.j 1.+0.j 0.+0.j], got [0.+0.j 1.+0.j 0.+0.j 0.+0.j]
+Traceback (most recent call last):
+  File "/tmp/tmp2r6toicu.py", line 39, in <module>
+    test_qubit_swap()
+  File "/tmp/tmp2r6toicu.py", line 35, in test_qubit_swap
+    assert np.allclose(statevector.data, expected), f"
