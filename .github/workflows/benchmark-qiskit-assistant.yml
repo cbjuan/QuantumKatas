@@ -1,0 +1,110 @@
+name: Benchmark Qiskit Code Assistant
+
+on:
+  # Allow manual triggering from GitHub UI
+  workflow_dispatch:
+    inputs:
+      dataset:
+        description: 'Dataset to use'
+        required: false
+        default: 'quantum_katas_dataset_verified.jsonl'
+        type: choice
+        options:
+          - quantum_katas_dataset_verified.jsonl
+          - quantum_katas_dataset.jsonl
+      max_tasks:
+        description: 'Maximum number of tasks to evaluate (leave empty for all)'
+        required: false
+        type: string
+      model:
+        description: 'Model to use'
+        required: false
+        default: 'mistral-small-3.2-24b-qiskit'
+        type: string
+      temperature:
+        description: 'Temperature (0.0-1.0)'
+        required: false
+        default: '0.2'
+        type: string
+
+  # Optional: Run on schedule (e.g., weekly on Monday at 00:00 UTC)
+  # schedule:
+  #   - cron: '0 0 * * 1'
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180  # 3 hours max
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras
+
+      - name: Verify dataset exists
+        run: |
+          if [ ! -f "${{ github.event.inputs.dataset || 'quantum_katas_dataset_verified.jsonl' }}" ]; then
+            echo "Error: Dataset file not found"
+            exit 1
+          fi
+
+      - name: Run evaluation
+        env:
+          IBM_QUANTUM_TOKEN: ${{ secrets.IBM_QUANTUM_TOKEN }}
+        run: |
+          DATASET="${{ github.event.inputs.dataset || 'quantum_katas_dataset_verified.jsonl' }}"
+          MODEL="${{ github.event.inputs.model || 'mistral-small-3.2-24b-qiskit' }}"
+          TEMPERATURE="${{ github.event.inputs.temperature || '0.2' }}"
+          MAX_TASKS="${{ github.event.inputs.max_tasks }}"
+
+          # Build command with optional parameters
+          CMD="uv run python evaluate_qiskit_assistant.py --dataset $DATASET --model $MODEL --temperature $TEMPERATURE"
+
+          if [ -n "$MAX_TASKS" ]; then
+            CMD="$CMD --max-tasks $MAX_TASKS"
+          fi
+
+          echo "Running: $CMD"
+          $CMD
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results-${{ github.run_number }}
+          path: results_*.json
+          retention-days: 30
+
+      - name: Create summary
+        if: always()
+        run: |
+          if [ -f results_*.json ]; then
+            RESULT_FILE=$(ls -t results_*.json | head -1)
+            echo "## Benchmark Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            # Extract key metrics using jq
+            PASS_RATE=$(jq -r '.pass_rate' "$RESULT_FILE")
+            PASSED=$(jq -r '.passed' "$RESULT_FILE")
+            TOTAL=$(jq -r '.total_tasks' "$RESULT_FILE")
+            MODEL=$(jq -r '.model' "$RESULT_FILE")
+
+            echo "**Model:** $MODEL" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Pass Rate:** $PASS_RATE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Tasks Passed:** $PASSED / $TOTAL" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Results saved as artifact: benchmark-results-${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          fi
