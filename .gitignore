@@ -215,3 +215,7 @@ target
 
 # Others
 .DS_Store
+
+# Benchmark results
+results_*.json
+.uv/
