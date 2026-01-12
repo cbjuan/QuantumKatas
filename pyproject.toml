@@ -1,0 +1,62 @@
+[project]
+name = "quantum-katas-qiskit"
+version = "1.0.0"
+description = "Quantum Katas dataset for evaluating LLMs on Qiskit code generation"
+readme = "DATASET_README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Juan Cruz-Benito", email = "cbjuan@users.noreply.github.com"}
+]
+keywords = ["quantum", "qiskit", "benchmark", "llm", "code-generation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+dependencies = [
+    "qiskit>=2.2.0",
+    "qiskit-aer>=0.13.0",
+    "numpy>=1.20.0",
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "tqdm>=4.65.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/cbjuan/QuantumKatas"
+Repository = "https://github.com/cbjuan/QuantumKatas"
+Issues = "https://github.com/cbjuan/QuantumKatas/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
