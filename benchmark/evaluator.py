@@ -25,8 +25,10 @@ class EvaluationResult:
 def extract_code_from_response(response: str) -> str:
     """Extract Python code from LLM response.
 
-    Handles markdown code blocks and raw code.
+    Handles markdown code blocks, triple-quoted strings, and raw code.
     """
+    response = response.strip()
+
     # Try to extract from markdown code block
     patterns = [
         r"```python\n(.*?)```",
@@ -39,8 +41,14 @@ def extract_code_from_response(response: str) -> str:
         if match:
             return match.group(1).strip()
 
+    # Handle response wrapped in triple quotes (common with completion models)
+    if response.startswith('"""') and response.endswith('"""'):
+        return response[3:-3].strip()
+    if response.startswith("'''") and response.endswith("'''"):
+        return response[3:-3].strip()
+
     # If no code block, return as-is (might be raw code)
-    return response.strip()
+    return response
 
 
 def check_syntax(code: str) -> tuple[bool, Optional[str]]:
