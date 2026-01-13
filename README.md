@@ -191,14 +191,23 @@ qk-benchmark --model my-model --config custom_models.json
 
 ### Environment Variables
 
-API keys should be set via environment variables (not in JSON files):
+API keys and URLs are configured via environment variables. Create a `.env` file from the template:
+
+```bash
+cp .env.example .env
+# Edit .env with your credentials
+```
+
+Available variables:
 - `ANTHROPIC_API_KEY` - Anthropic Claude
 - `OPENAI_API_KEY` - OpenAI GPT
 - `GOOGLE_API_KEY` - Google Gemini
-- `LITELLM_API_KEY` - LiteLLM proxy
+- `LITELLM_API_KEY` - LiteLLM proxy API key
 - `LITELLM_BASE_URL` - LiteLLM base URL (default: http://localhost:4000/v1)
 - `VLLM_API_KEY` - vLLM (optional, defaults to "dummy")
 - `QISKIT_ASSISTANT_TOKEN` - IBM Qiskit Code Assistant
+
+The `.env` file is automatically loaded when running the benchmark.
 
 ## Results
 

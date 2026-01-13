@@ -7,6 +7,11 @@ from pathlib import Path
 from typing import Optional
 import sys
 
+from dotenv import load_dotenv
+
+# Load .env file if present
+load_dotenv()
+
 from .config import BenchmarkConfig, ModelConfig, get_model_config, load_config_file, MODELS
 from .models import Provider, create_provider, GenerationResult
 from .evaluator import evaluate_solution, EvaluationResult

@@ -1,5 +1,8 @@
 # Quantum Katas Benchmark
 
+# Environment variables (secrets)
+.env
+
 # Benchmark results (keep .gitkeep)
 results/*.json
 results/*.md
