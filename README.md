@@ -137,6 +137,67 @@ You can also benchmark open-source models via vLLM:
 - Code Llama
 - Any model with OpenAI-compatible API
 
+### LiteLLM Proxy
+Access any model through a LiteLLM proxy for unified access:
+- Any model supported by LiteLLM
+- Useful for accessing multiple providers through a single endpoint
+
+## JSON Configuration
+
+You can define model configurations in a JSON file instead of code:
+
+### Config File Format
+
+```json
+{
+  "my-model": {
+    "provider": "anthropic",
+    "model_id": "claude-sonnet-4-20250514",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
+  "my-vllm-model": {
+    "provider": "vllm",
+    "model_id": "Qwen/Qwen2.5-Coder-32B-Instruct",
+    "base_url": "http://localhost:8000/v1",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  }
+}
+```
+
+See `benchmark/config_examples/models.json` for a complete example.
+
+### Using JSON Config
+
+```python
+from benchmark import load_models_from_json, BenchmarkRunner
+
+# Load models from JSON file
+models = load_models_from_json("my_models.json")
+
+# Use a model from the config
+runner = BenchmarkRunner(model_config=models["my-model"])
+results = runner.run()
+```
+
+### CLI with Config File
+
+```bash
+qk-benchmark --model my-model --config my_models.json
+```
+
+### Environment Variables
+
+API keys should be set via environment variables (not in JSON files):
+- `ANTHROPIC_API_KEY` - Anthropic Claude
+- `OPENAI_API_KEY` - OpenAI GPT
+- `GOOGLE_API_KEY` - Google Gemini
+- `LITELLM_API_KEY` - LiteLLM proxy
+- `LITELLM_BASE_URL` - LiteLLM base URL (default: http://localhost:4000/v1)
+- `VLLM_API_KEY` - vLLM (optional, defaults to "dummy")
+- `QISKIT_ASSISTANT_TOKEN` - IBM Qiskit Code Assistant
+
 ## Results
 
 Results are saved in JSON format with:

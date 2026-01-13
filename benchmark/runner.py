@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 import sys
 
-from .config import BenchmarkConfig, ModelConfig, get_model_config
+from .config import BenchmarkConfig, ModelConfig, get_model_config, load_config_file, MODELS
 from .models import Provider, create_provider, GenerationResult
 from .evaluator import evaluate_solution, EvaluationResult
 
@@ -251,20 +251,42 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Run quantum katas benchmark")
-    parser.add_argument("--model", required=True, help="Model name (e.g., claude-sonnet, gpt-4o)")
+    parser.add_argument("--model", help="Model name (e.g., claude-sonnet, gpt-4o)")
+    parser.add_argument("--config", help="JSON config file with model definitions")
     parser.add_argument("--dataset", default="dataset/quantum_katas.jsonl", help="Dataset path")
     parser.add_argument("--output", default="results", help="Output directory")
     parser.add_argument("--categories", nargs="+", help="Filter by categories")
     parser.add_argument("--task-ids", nargs="+", help="Filter by task IDs")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--list-models", action="store_true", help="List available models and exit")
 
     args = parser.parse_args()
 
-    try:
-        model_config = get_model_config(args.model)
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
+    # Load models from config file or use built-in
+    if args.config:
+        models = load_config_file(args.config)
+    else:
+        models = MODELS
+
+    # List models if requested
+    if args.list_models:
+        print("Available models:")
+        for name in sorted(models.keys()):
+            cfg = models[name]
+            print(f"  {name}: {cfg.provider.value}/{cfg.model_id}")
+        sys.exit(0)
+
+    # Model is required for running benchmarks
+    if not args.model:
+        print("Error: --model is required", file=sys.stderr)
         sys.exit(1)
+
+    # Get model config
+    if args.model not in models:
+        available = ", ".join(sorted(models.keys()))
+        print(f"Error: Unknown model '{args.model}'. Available: {available}", file=sys.stderr)
+        sys.exit(1)
+    model_config = models[args.model]
 
     config = BenchmarkConfig(
         model=model_config,

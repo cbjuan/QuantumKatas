@@ -1,9 +1,10 @@
 """Configuration management for quantum katas benchmark."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
+import json
 import os
 
 
@@ -13,6 +14,7 @@ class ProviderType(Enum):
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
     GOOGLE = "google"
+    LITELLM = "litellm"
     VLLM = "vllm"
     QISKIT_ASSISTANT = "qiskit_assistant"
 
@@ -35,6 +37,7 @@ class ModelConfig:
                 ProviderType.ANTHROPIC: "ANTHROPIC_API_KEY",
                 ProviderType.OPENAI: "OPENAI_API_KEY",
                 ProviderType.GOOGLE: "GOOGLE_API_KEY",
+                ProviderType.LITELLM: "LITELLM_API_KEY",
                 ProviderType.VLLM: "VLLM_API_KEY",
                 ProviderType.QISKIT_ASSISTANT: "QISKIT_ASSISTANT_TOKEN",
             }
@@ -134,3 +137,82 @@ def get_model_config(model_name: str) -> ModelConfig:
         available = ", ".join(MODELS.keys())
         raise ValueError(f"Unknown model '{model_name}'. Available: {available}")
     return MODELS[model_name]
+
+
+def model_config_from_dict(data: dict) -> ModelConfig:
+    """Create a ModelConfig from a dictionary."""
+    provider_str = data.get("provider", "").lower()
+    try:
+        provider = ProviderType(provider_str)
+    except ValueError:
+        valid = [p.value for p in ProviderType]
+        raise ValueError(f"Unknown provider '{provider_str}'. Valid: {valid}")
+
+    return ModelConfig(
+        provider=provider,
+        model_id=data["model_id"],
+        api_key=data.get("api_key"),
+        base_url=data.get("base_url"),
+        max_tokens=data.get("max_tokens", 4096),
+        temperature=data.get("temperature", 0.0),
+    )
+
+
+def load_models_from_json(path: Union[str, Path]) -> dict[str, ModelConfig]:
+    """Load model configurations from a JSON file.
+
+    JSON format:
+    {
+      "model-name": {
+        "provider": "anthropic|openai|google|litellm|vllm|qiskit_assistant",
+        "model_id": "model-id-string",
+        "base_url": "optional-base-url",
+        "max_tokens": 4096,
+        "temperature": 0.0
+      }
+    }
+
+    API keys should be set via environment variables, not in the JSON file.
+    """
+    path = Path(path)
+    with open(path) as f:
+        data = json.load(f)
+
+    models = {}
+    for name, config_data in data.items():
+        models[name] = model_config_from_dict(config_data)
+
+    return models
+
+
+def save_models_to_json(path: Union[str, Path], models: Optional[dict[str, ModelConfig]] = None):
+    """Save model configurations to a JSON file.
+
+    Useful for generating an initial config file from the built-in MODELS.
+    """
+    if models is None:
+        models = MODELS
+
+    path = Path(path)
+    data = {}
+    for name, config in models.items():
+        data[name] = {
+            "provider": config.provider.value,
+            "model_id": config.model_id,
+            "base_url": config.base_url,
+            "max_tokens": config.max_tokens,
+            "temperature": config.temperature,
+        }
+
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def load_config_file(path: Union[str, Path]) -> dict[str, ModelConfig]:
+    """Load models from config file and merge with built-in MODELS.
+
+    Models from the file override built-in models with the same name.
+    """
+    custom_models = load_models_from_json(path)
+    merged = {**MODELS, **custom_models}
+    return merged

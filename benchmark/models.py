@@ -201,6 +201,27 @@ class GoogleProvider(Provider):
         )
 
 
+class LiteLLMProvider(OpenAIProvider):
+    """LiteLLM provider for unified access to multiple LLM providers.
+
+    LiteLLM provides a unified interface to 100+ LLMs including OpenAI, Anthropic,
+    Google, and open-source models. It exposes an OpenAI-compatible API.
+
+    Environment variables:
+        LITELLM_API_KEY: API key for LiteLLM proxy
+        LITELLM_BASE_URL: Base URL (default: http://localhost:4000/v1)
+    """
+
+    def __init__(self, config: ModelConfig):
+        import os
+
+        if not config.base_url:
+            config.base_url = os.environ.get("LITELLM_BASE_URL", "http://localhost:4000/v1")
+        if not config.api_key:
+            config.api_key = os.environ.get("LITELLM_API_KEY", "dummy")
+        super().__init__(config)
+
+
 class QiskitAssistantProvider(Provider):
     """IBM Qiskit Code Assistant provider."""
 
@@ -268,6 +289,7 @@ def create_provider(config: ModelConfig) -> Provider:
         ProviderType.ANTHROPIC: AnthropicProvider,
         ProviderType.OPENAI: OpenAIProvider,
         ProviderType.GOOGLE: GoogleProvider,
+        ProviderType.LITELLM: LiteLLMProvider,
         ProviderType.VLLM: VLLMProvider,
         ProviderType.QISKIT_ASSISTANT: QiskitAssistantProvider,
     }

@@ -1,0 +1,77 @@
+{
+  "claude-opus": {
+    "provider": "anthropic",
+    "model_id": "claude-opus-4-20250514",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
+  "claude-sonnet": {
+    "provider": "anthropic",
+    "model_id": "claude-sonnet-4-20250514",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
+  "claude-haiku": {
+    "provider": "anthropic",
+    "model_id": "claude-haiku-4-20250514",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
+  "gpt-4o": {
+    "provider": "openai",
+    "model_id": "gpt-4o",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
+  "gpt-4o-mini": {
+    "provider": "openai",
+    "model_id": "gpt-4o-mini",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
+  "o1": {
+    "provider": "openai",
+    "model_id": "o1",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
+  "o3-mini": {
+    "provider": "openai",
+    "model_id": "o3-mini",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
+  "gemini-2.5-pro": {
+    "provider": "google",
+    "model_id": "gemini-2.5-pro",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
+  "gemini-2.5-flash": {
+    "provider": "google",
+    "model_id": "gemini-2.5-flash",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
+  "mistral-qiskit": {
+    "provider": "qiskit_assistant",
+    "model_id": "mistral-small-3.2-24b-qiskit",
+    "base_url": "https://qiskit-code-assistant.quantum.ibm.com",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
+  "litellm-claude": {
+    "provider": "litellm",
+    "model_id": "claude-sonnet-4-20250514",
+    "base_url": "http://localhost:4000/v1",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
+  "vllm-qwen": {
+    "provider": "vllm",
+    "model_id": "Qwen/Qwen2.5-Coder-32B-Instruct",
+    "base_url": "http://localhost:8000/v1",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  }
+}
