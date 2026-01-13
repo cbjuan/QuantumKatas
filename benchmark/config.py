@@ -12,6 +12,7 @@ class ProviderType(Enum):
 
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
+    GOOGLE = "google"
     VLLM = "vllm"
     QISKIT_ASSISTANT = "qiskit_assistant"
 
@@ -33,6 +34,7 @@ class ModelConfig:
             env_var_map = {
                 ProviderType.ANTHROPIC: "ANTHROPIC_API_KEY",
                 ProviderType.OPENAI: "OPENAI_API_KEY",
+                ProviderType.GOOGLE: "GOOGLE_API_KEY",
                 ProviderType.VLLM: "VLLM_API_KEY",
                 ProviderType.QISKIT_ASSISTANT: "QISKIT_ASSISTANT_TOKEN",
             }
@@ -103,6 +105,19 @@ MODELS = {
     "o1-mini": ModelConfig(
         provider=ProviderType.OPENAI,
         model_id="o1-mini",
+    ),
+    "o3-mini": ModelConfig(
+        provider=ProviderType.OPENAI,
+        model_id="o3-mini",
+    ),
+    # Google Gemini models
+    "gemini-2.5-pro": ModelConfig(
+        provider=ProviderType.GOOGLE,
+        model_id="gemini-2.5-pro",
+    ),
+    "gemini-2.5-flash": ModelConfig(
+        provider=ProviderType.GOOGLE,
+        model_id="gemini-2.5-flash",
     ),
     # Qiskit Code Assistant
     "mistral-qiskit": ModelConfig(

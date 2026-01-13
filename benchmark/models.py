@@ -148,6 +148,59 @@ class VLLMProvider(OpenAIProvider):
         super().__init__(config)
 
 
+class GoogleProvider(Provider):
+    """Google Gemini provider."""
+
+    def __init__(self, config: ModelConfig):
+        super().__init__(config)
+        try:
+            import google.generativeai as genai
+        except ImportError:
+            raise ImportError("google-generativeai package required: pip install google-generativeai")
+
+        genai.configure(api_key=config.api_key)
+        self.genai = genai
+        self.model = genai.GenerativeModel(config.model_id)
+
+    def generate(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
+        start_time = time.time()
+        error = None
+        content = ""
+        input_tokens = 0
+        output_tokens = 0
+
+        try:
+            full_prompt = prompt
+            if system_prompt:
+                full_prompt = f"{system_prompt}\n\n{prompt}"
+
+            generation_config = self.genai.GenerationConfig(
+                max_output_tokens=self.config.max_tokens,
+                temperature=self.config.temperature,
+            )
+
+            response = self.model.generate_content(
+                full_prompt,
+                generation_config=generation_config,
+            )
+            content = response.text
+            if response.usage_metadata:
+                input_tokens = response.usage_metadata.prompt_token_count
+                output_tokens = response.usage_metadata.candidates_token_count
+        except Exception as e:
+            error = str(e)
+
+        latency_ms = (time.time() - start_time) * 1000
+        return GenerationResult(
+            content=content,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            latency_ms=latency_ms,
+            model_id=self.config.model_id,
+            error=error,
+        )
+
+
 class QiskitAssistantProvider(Provider):
     """IBM Qiskit Code Assistant provider."""
 
@@ -214,6 +267,7 @@ def create_provider(config: ModelConfig) -> Provider:
     provider_map = {
         ProviderType.ANTHROPIC: AnthropicProvider,
         ProviderType.OPENAI: OpenAIProvider,
+        ProviderType.GOOGLE: GoogleProvider,
         ProviderType.VLLM: VLLMProvider,
         ProviderType.QISKIT_ASSISTANT: QiskitAssistantProvider,
     }

@@ -36,6 +36,7 @@ uv pip install -e .
 - qiskit-aer >= 0.15.0
 - anthropic >= 0.40.0 (for Claude models)
 - openai >= 1.0.0 (for GPT/vLLM models)
+- google-generativeai >= 0.8.0 (for Gemini models)
 
 ## Usage
 
@@ -118,11 +119,23 @@ results = runner.run(verbose=True)
 ### OpenAI
 - `gpt-4o` - GPT-4o
 - `gpt-4o-mini` - GPT-4o Mini
-- `o1` - o1
+- `o1` - o1 (reasoning model)
 - `o1-mini` - o1 Mini
+- `o3-mini` - o3 Mini (latest reasoning model)
+
+### Google Gemini
+- `gemini-2.5-pro` - Gemini 2.5 Pro (state-of-the-art reasoning)
+- `gemini-2.5-flash` - Gemini 2.5 Flash (fast, balanced)
 
 ### Qiskit Code Assistant
 - `mistral-qiskit` - Mistral Small 3.2 24B (Qiskit-tuned)
+
+### Open Source (via vLLM)
+You can also benchmark open-source models via vLLM:
+- DeepSeek-V3.2 / DeepSeek-Coder
+- Qwen2.5-Coder / Qwen3-Coder
+- Code Llama
+- Any model with OpenAI-compatible API
 
 ## Results
 
