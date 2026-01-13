@@ -1,0 +1,37 @@
+[project]
+name = "quantum-katas-benchmark"
+version = "0.1.0"
+description = "Benchmark LLMs on quantum computing tasks using the Quantum Katas dataset"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.40.0",
+    "openai>=1.0.0",
+    "qiskit>=1.0.0",
+    "qiskit-aer>=0.15.0",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+qk-benchmark = "benchmark.runner:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
