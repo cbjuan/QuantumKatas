@@ -251,9 +251,46 @@ class BenchmarkRunner:
         )
 
 
+def run_single_model_benchmark(
+    model_name: str,
+    model_config: ModelConfig,
+    dataset_path: Path,
+    output_dir: Path,
+    categories: Optional[list[str]],
+    task_ids: Optional[list[str]],
+    verbose: bool,
+) -> tuple[str, Path, float]:
+    """Run benchmark for a single model. Used for parallel execution."""
+    config = BenchmarkConfig(
+        model=model_config,
+        dataset_path=dataset_path,
+        output_dir=output_dir,
+        categories=categories,
+        task_ids=task_ids,
+        verbose=verbose,
+    )
+
+    runner = BenchmarkRunner(config=config)
+    if verbose:
+        print(f"\n[{model_name}] Starting benchmark ({model_config.model_id})...")
+        print(f"[{model_name}] Tasks: {len(runner.tasks)}")
+
+    results = runner.run()
+
+    output_file = output_dir / f"{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    results.save(output_file)
+
+    if verbose:
+        print(f"\n[{model_name}] Results saved to: {output_file}")
+        print(f"[{model_name}] Pass rate: {results.pass_rate:.1%} ({results.passed_tasks}/{results.completed_tasks})")
+
+    return model_name, output_file, results.pass_rate
+
+
 def main():
     """CLI entry point."""
     import argparse
+    from concurrent.futures import ProcessPoolExecutor, as_completed
 
     parser = argparse.ArgumentParser(description="Run quantum katas benchmark")
     parser.add_argument("--model", help="Model name (e.g., claude-sonnet, gpt-4o)")
@@ -265,6 +302,14 @@ def main():
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--list-models", action="store_true", help="List available models and exit")
     parser.add_argument("--all", action="store_true", help="Run benchmark on all configured models")
+    parser.add_argument(
+        "--parallel", "-p",
+        type=int,
+        nargs="?",
+        const=0,
+        default=None,
+        help="Run models in parallel (optionally specify max workers, default: number of models)",
+    )
 
     args = parser.parse_args()
 
@@ -299,30 +344,72 @@ def main():
         print("Error: --model or --all is required", file=sys.stderr)
         sys.exit(1)
 
+    # Ensure output directory exists
+    output_dir = Path(args.output)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     # Run benchmark for each model
-    for model_name in models_to_run:
-        model_config = models[model_name]
+    if args.parallel is not None and len(models_to_run) > 1:
+        # Parallel execution
+        max_workers = args.parallel if args.parallel > 0 else len(models_to_run)
+        print(f"\nRunning {len(models_to_run)} models in parallel (max workers: {max_workers})...")
 
-        config = BenchmarkConfig(
-            model=model_config,
-            dataset_path=Path(args.dataset),
-            output_dir=Path(args.output),
-            categories=args.categories,
-            task_ids=args.task_ids,
-            verbose=args.verbose,
-        )
+        completed_results = []
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(
+                    run_single_model_benchmark,
+                    model_name,
+                    models[model_name],
+                    Path(args.dataset),
+                    output_dir,
+                    args.categories,
+                    args.task_ids,
+                    args.verbose,
+                ): model_name
+                for model_name in models_to_run
+            }
 
-        runner = BenchmarkRunner(config=config)
-        print(f"\nRunning benchmark with {model_name} ({model_config.model_id})...")
-        print(f"Tasks: {len(runner.tasks)}")
+            for future in as_completed(futures):
+                model_name = futures[future]
+                try:
+                    name, output_file, pass_rate = future.result()
+                    completed_results.append((name, output_file, pass_rate))
+                    print(f"[{name}] Completed: {pass_rate:.1%} -> {output_file}")
+                except Exception as e:
+                    print(f"[{model_name}] Failed: {e}", file=sys.stderr)
 
-        results = runner.run()
+        # Print summary
+        print(f"\n{'='*60}")
+        print("Parallel Benchmark Summary")
+        print(f"{'='*60}")
+        for name, output_file, pass_rate in sorted(completed_results, key=lambda x: -x[2]):
+            print(f"  {name}: {pass_rate:.1%}")
+    else:
+        # Sequential execution
+        for model_name in models_to_run:
+            model_config = models[model_name]
 
-        output_file = config.output_dir / f"{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        results.save(output_file)
+            config = BenchmarkConfig(
+                model=model_config,
+                dataset_path=Path(args.dataset),
+                output_dir=output_dir,
+                categories=args.categories,
+                task_ids=args.task_ids,
+                verbose=args.verbose,
+            )
 
-        print(f"\nResults saved to: {output_file}")
-        print(f"Pass rate: {results.pass_rate:.1%} ({results.passed_tasks}/{results.completed_tasks})")
+            runner = BenchmarkRunner(config=config)
+            print(f"\nRunning benchmark with {model_name} ({model_config.model_id})...")
+            print(f"Tasks: {len(runner.tasks)}")
+
+            results = runner.run()
+
+            output_file = output_dir / f"{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            results.save(output_file)
+
+            print(f"\nResults saved to: {output_file}")
+            print(f"Pass rate: {results.pass_rate:.1%} ({results.passed_tasks}/{results.completed_tasks})")
 
 
 if __name__ == "__main__":
