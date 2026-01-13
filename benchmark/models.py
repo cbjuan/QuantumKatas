@@ -7,6 +7,10 @@ import time
 
 from .config import ModelConfig, ProviderType
 
+# Identifier for requests from this benchmark
+USER_AGENT = "quantum-katas-benchmark/0.1.0"
+X_CALLER = "quantum-katas-benchmark"
+
 
 @dataclass
 class GenerationResult:
@@ -47,7 +51,13 @@ class AnthropicProvider(Provider):
         except ImportError:
             raise ImportError("anthropic package required: pip install anthropic")
 
-        self.client = Anthropic(api_key=config.api_key)
+        self.client = Anthropic(
+            api_key=config.api_key,
+            default_headers={
+                "User-Agent": USER_AGENT,
+                "X-Caller": X_CALLER,
+            },
+        )
 
     def generate(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
         start_time = time.time()
@@ -94,7 +104,13 @@ class OpenAIProvider(Provider):
         except ImportError:
             raise ImportError("openai package required: pip install openai")
 
-        kwargs = {"api_key": config.api_key}
+        kwargs = {
+            "api_key": config.api_key,
+            "default_headers": {
+                "User-Agent": USER_AGENT,
+                "X-Caller": X_CALLER,
+            },
+        }
         if config.base_url:
             kwargs["base_url"] = config.base_url
 
@@ -263,6 +279,8 @@ class QiskitAssistantProvider(Provider):
                 headers={
                     "Authorization": f"Bearer {self.config.api_key}",
                     "Content-Type": "application/json",
+                    "User-Agent": USER_AGENT,
+                    "X-Caller": X_CALLER,
                 },
                 json={
                     "prompt": full_prompt,
