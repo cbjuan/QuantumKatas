@@ -204,7 +204,8 @@ Available variables:
 - `GOOGLE_API_KEY` - Google Gemini
 - `LITELLM_API_KEY` - LiteLLM proxy API key
 - `LITELLM_BASE_URL` - LiteLLM base URL (default: http://localhost:4000/v1)
-- `VLLM_API_KEY` - vLLM (optional, defaults to "dummy")
+- `VLLM_API_KEY` - vLLM API key (optional, defaults to "dummy")
+- `VLLM_BASE_URL` - vLLM base URL (e.g., http://localhost:8000/v1)
 - `QISKIT_ASSISTANT_TOKEN` - IBM Qiskit Code Assistant
 
 The `.env` file is automatically loaded when running the benchmark.

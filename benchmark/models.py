@@ -138,13 +138,24 @@ class OpenAIProvider(Provider):
 
 
 class VLLMProvider(OpenAIProvider):
-    """vLLM provider using OpenAI-compatible API."""
+    """vLLM provider using OpenAI-compatible API.
+
+    Environment variables:
+        VLLM_API_KEY: API key (optional, defaults to "dummy")
+        VLLM_BASE_URL: Base URL (e.g., http://localhost:8000/v1)
+    """
 
     def __init__(self, config: ModelConfig):
+        import os
+
         if not config.base_url:
-            raise ValueError("VLLMProvider requires base_url (e.g., http://localhost:8000/v1)")
+            config.base_url = os.environ.get("VLLM_BASE_URL")
+        if not config.base_url:
+            raise ValueError(
+                "VLLMProvider requires base_url via config or VLLM_BASE_URL env var"
+            )
         if not config.api_key:
-            config.api_key = "dummy"  # vLLM doesn't require real API key
+            config.api_key = os.environ.get("VLLM_API_KEY", "dummy")
         super().__init__(config)
 
 
