@@ -155,9 +155,23 @@ class BenchmarkRunner:
                         continue
                 self.tasks.append(task)
 
-    def run(self, verbose: Optional[bool] = None) -> BenchmarkResults:
-        """Run the benchmark on all tasks."""
+    def run(
+        self,
+        verbose: Optional[bool] = None,
+        progress_callback: Optional[callable] = None,
+        model_name: Optional[str] = None,
+        debug: bool = False,
+    ) -> BenchmarkResults:
+        """Run the benchmark on all tasks.
+
+        Args:
+            verbose: Print progress to stdout
+            progress_callback: Called after each task with (model_name, completed, total, passed, status)
+            model_name: Model name for progress reporting (defaults to model_id)
+            debug: Print raw model responses for failed tasks
+        """
         verbose = verbose if verbose is not None else self.config.verbose
+        model_name = model_name or self.model_config.model_id
         results = BenchmarkResults(
             model_id=self.model_config.model_id,
             provider=self.model_config.provider.value,
@@ -207,16 +221,45 @@ class BenchmarkRunner:
 
             if evaluation.passed:
                 results.passed_tasks += 1
+                status = "PASS"
                 if verbose:
                     print("PASS")
             elif generation.error or evaluation.error_message:
                 results.error_tasks += 1
+                status = "ERROR"
                 if verbose:
-                    print(f"ERROR: {evaluation.error_message[:50]}...")
+                    error_msg = generation.error or evaluation.error_message or "Unknown error"
+                    print(f"ERROR: {error_msg[:50]}...")
+                if debug:
+                    print(f"\n--- DEBUG: {task.task_id} ---")
+                    print(f"Error: {generation.error or evaluation.error_message}")
+                    print(f"Response ({len(generation.content)} chars):")
+                    print(generation.content[:1000] if generation.content else "(empty)")
+                    if len(generation.content) > 1000:
+                        print(f"... ({len(generation.content) - 1000} more chars)")
+                    print("--- END DEBUG ---\n")
             else:
                 results.failed_tasks += 1
+                status = "FAIL"
                 if verbose:
                     print("FAIL")
+                if debug:
+                    print(f"\n--- DEBUG: {task.task_id} ---")
+                    print(f"Response ({len(generation.content)} chars):")
+                    print(generation.content[:1000] if generation.content else "(empty)")
+                    if len(generation.content) > 1000:
+                        print(f"... ({len(generation.content) - 1000} more chars)")
+                    print("--- END DEBUG ---\n")
+
+            # Progress callback for parallel monitoring
+            if progress_callback:
+                progress_callback(
+                    model_name,
+                    results.completed_tasks,
+                    len(self.tasks),
+                    results.passed_tasks,
+                    status,
+                )
 
             # Checkpoint
             if (i + 1) % self.config.checkpoint_interval == 0:
@@ -259,30 +302,44 @@ def run_single_model_benchmark(
     categories: Optional[list[str]],
     task_ids: Optional[list[str]],
     verbose: bool,
+    progress_queue=None,
 ) -> tuple[str, Path, float]:
     """Run benchmark for a single model. Used for parallel execution."""
+    # When using progress queue, don't print verbose output (use queue instead)
+    use_verbose = verbose and not progress_queue
+
     config = BenchmarkConfig(
         model=model_config,
         dataset_path=dataset_path,
         output_dir=output_dir,
         categories=categories,
         task_ids=task_ids,
-        verbose=verbose,
+        verbose=use_verbose,
     )
 
     runner = BenchmarkRunner(config=config)
-    if verbose:
-        print(f"\n[{model_name}] Starting benchmark ({model_config.model_id})...")
-        print(f"[{model_name}] Tasks: {len(runner.tasks)}")
 
-    results = runner.run()
+    # Send initial progress
+    if progress_queue:
+        progress_queue.put((model_name, 0, len(runner.tasks), 0, "STARTED"))
+
+    # Create progress callback that sends to queue
+    def progress_callback(name, completed, total, passed, status):
+        if progress_queue:
+            progress_queue.put((name, completed, total, passed, status))
+
+    results = runner.run(
+        verbose=use_verbose,
+        progress_callback=progress_callback if progress_queue else None,
+        model_name=model_name,
+    )
 
     output_file = output_dir / f"{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     results.save(output_file)
 
-    if verbose:
-        print(f"\n[{model_name}] Results saved to: {output_file}")
-        print(f"[{model_name}] Pass rate: {results.pass_rate:.1%} ({results.passed_tasks}/{results.completed_tasks})")
+    # Send completion
+    if progress_queue:
+        progress_queue.put((model_name, results.completed_tasks, len(runner.tasks), results.passed_tasks, "DONE"))
 
     return model_name, output_file, results.pass_rate
 
@@ -299,7 +356,8 @@ def main():
     parser.add_argument("--output", default="results", help="Output directory")
     parser.add_argument("--categories", nargs="+", help="Filter by categories")
     parser.add_argument("--task-ids", nargs="+", help="Filter by task IDs")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--quiet", "-q", action="store_true", help="Suppress task-by-task output")
+    parser.add_argument("--debug", "-d", action="store_true", help="Show raw model responses for failed tasks")
     parser.add_argument("--list-models", action="store_true", help="List available models and exit")
     parser.add_argument("--all", action="store_true", help="Run benchmark on all configured models")
     parser.add_argument(
@@ -350,9 +408,41 @@ def main():
 
     # Run benchmark for each model
     if args.parallel is not None and len(models_to_run) > 1:
-        # Parallel execution
+        # Parallel execution with progress tracking
+        from multiprocessing import Manager
+        import threading
+
         max_workers = args.parallel if args.parallel > 0 else len(models_to_run)
         print(f"\nRunning {len(models_to_run)} models in parallel (max workers: {max_workers})...")
+
+        stop_progress = threading.Event()
+
+        def progress_monitor(queue):
+            """Monitor progress queue and update display."""
+            while not stop_progress.is_set():
+                try:
+                    # Non-blocking get with timeout
+                    msg = queue.get(timeout=0.5)
+                    if msg is None:
+                        break
+                    name, completed, total, passed, status = msg
+                    # Print progress update for each task completion
+                    if status in ("PASS", "FAIL", "ERROR"):
+                        pass_rate = passed / completed * 100 if completed > 0 else 0
+                        print(f"  [{name}] {completed}/{total} - {passed} passed ({pass_rate:.0f}%) - {status}", flush=True)
+                    elif status == "STARTED":
+                        print(f"  [{name}] Started ({total} tasks)", flush=True)
+                except Exception:
+                    # Queue.get timeout or other error
+                    pass
+
+        # Create multiprocessing manager and queue
+        manager = Manager()
+        progress_queue = manager.Queue()
+
+        # Start progress monitor thread
+        monitor_thread = threading.Thread(target=progress_monitor, args=(progress_queue,), daemon=True)
+        monitor_thread.start()
 
         completed_results = []
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -365,7 +455,8 @@ def main():
                     output_dir,
                     args.categories,
                     args.task_ids,
-                    args.verbose,
+                    not args.quiet,
+                    progress_queue,
                 ): model_name
                 for model_name in models_to_run
             }
@@ -375,9 +466,14 @@ def main():
                 try:
                     name, output_file, pass_rate = future.result()
                     completed_results.append((name, output_file, pass_rate))
-                    print(f"[{name}] Completed: {pass_rate:.1%} -> {output_file}")
+                    print(f"\n[{name}] COMPLETED: {pass_rate:.1%} -> {output_file}")
                 except Exception as e:
-                    print(f"[{model_name}] Failed: {e}", file=sys.stderr)
+                    print(f"\n[{model_name}] FAILED: {e}", file=sys.stderr)
+
+        # Stop progress monitor
+        stop_progress.set()
+        progress_queue.put(None)
+        monitor_thread.join(timeout=1.0)
 
         # Print summary
         print(f"\n{'='*60}")
@@ -396,14 +492,14 @@ def main():
                 output_dir=output_dir,
                 categories=args.categories,
                 task_ids=args.task_ids,
-                verbose=args.verbose,
+                verbose=not args.quiet,
             )
 
             runner = BenchmarkRunner(config=config)
             print(f"\nRunning benchmark with {model_name} ({model_config.model_id})...")
             print(f"Tasks: {len(runner.tasks)}")
 
-            results = runner.run()
+            results = runner.run(debug=args.debug)
 
             output_file = output_dir / f"{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             results.save(output_file)
