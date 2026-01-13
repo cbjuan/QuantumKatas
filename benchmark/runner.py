@@ -264,6 +264,7 @@ def main():
     parser.add_argument("--task-ids", nargs="+", help="Filter by task IDs")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--list-models", action="store_true", help="List available models and exit")
+    parser.add_argument("--all", action="store_true", help="Run benchmark on all configured models")
 
     args = parser.parse_args()
 
@@ -285,38 +286,43 @@ def main():
             print(f"  {name}: {cfg.provider.value}/{cfg.model_id}")
         sys.exit(0)
 
-    # Model is required for running benchmarks
-    if not args.model:
-        print("Error: --model is required", file=sys.stderr)
+    # Determine which models to run
+    if args.all:
+        models_to_run = list(models.keys())
+    elif args.model:
+        if args.model not in models:
+            available = ", ".join(sorted(models.keys()))
+            print(f"Error: Unknown model '{args.model}'. Available: {available}", file=sys.stderr)
+            sys.exit(1)
+        models_to_run = [args.model]
+    else:
+        print("Error: --model or --all is required", file=sys.stderr)
         sys.exit(1)
 
-    # Get model config
-    if args.model not in models:
-        available = ", ".join(sorted(models.keys()))
-        print(f"Error: Unknown model '{args.model}'. Available: {available}", file=sys.stderr)
-        sys.exit(1)
-    model_config = models[args.model]
+    # Run benchmark for each model
+    for model_name in models_to_run:
+        model_config = models[model_name]
 
-    config = BenchmarkConfig(
-        model=model_config,
-        dataset_path=Path(args.dataset),
-        output_dir=Path(args.output),
-        categories=args.categories,
-        task_ids=args.task_ids,
-        verbose=args.verbose,
-    )
+        config = BenchmarkConfig(
+            model=model_config,
+            dataset_path=Path(args.dataset),
+            output_dir=Path(args.output),
+            categories=args.categories,
+            task_ids=args.task_ids,
+            verbose=args.verbose,
+        )
 
-    runner = BenchmarkRunner(config=config)
-    print(f"Running benchmark with {model_config.model_id}...")
-    print(f"Tasks: {len(runner.tasks)}")
+        runner = BenchmarkRunner(config=config)
+        print(f"\nRunning benchmark with {model_name} ({model_config.model_id})...")
+        print(f"Tasks: {len(runner.tasks)}")
 
-    results = runner.run()
+        results = runner.run()
 
-    output_file = config.output_dir / f"{args.model}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    results.save(output_file)
+        output_file = config.output_dir / f"{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        results.save(output_file)
 
-    print(f"\nResults saved to: {output_file}")
-    print(f"Pass rate: {results.pass_rate:.1%} ({results.passed_tasks}/{results.completed_tasks})")
+        print(f"\nResults saved to: {output_file}")
+        print(f"Pass rate: {results.pass_rate:.1%} ({results.passed_tasks}/{results.completed_tasks})")
 
 
 if __name__ == "__main__":
