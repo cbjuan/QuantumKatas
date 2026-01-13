@@ -106,7 +106,7 @@ def run_with_qiskit_assistant():
     print("Running benchmark with Qiskit Code Assistant")
     print("=" * 60)
 
-    config = get_model_config("granite-8b-qiskit")
+    config = get_model_config("mistral-qiskit")
     runner = BenchmarkRunner(
         model_config=config,
         dataset_path=Path("dataset/quantum_katas.jsonl"),
@@ -116,7 +116,7 @@ def run_with_qiskit_assistant():
     runner.config.categories = ["BasicGates"]
     results = runner.run(verbose=True)
 
-    output_path = Path("results/granite-8b-demo.json")
+    output_path = Path("results/mistral-qiskit-demo.json")
     results.save(output_path)
     print(f"\nResults saved to: {output_path}")
 
@@ -177,7 +177,7 @@ if __name__ == "__main__":
         model_map = {
             "anthropic": "claude-sonnet",
             "openai": "gpt-4o",
-            "qiskit": "granite-8b-qiskit",
+            "qiskit": "mistral-qiskit",
         }
         if args.provider == "vllm":
             print("Single task mode not supported with vLLM in this example")

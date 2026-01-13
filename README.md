@@ -101,7 +101,7 @@ from benchmark import BenchmarkRunner, ModelConfig, ProviderType
 
 config = ModelConfig(
     provider=ProviderType.QISKIT_ASSISTANT,
-    model_id="granite-8b-qiskit",
+    model_id="mistral-small-3.2-24b-qiskit",
     api_key="your-ibm-token",
 )
 runner = BenchmarkRunner(model_config=config)
@@ -122,8 +122,7 @@ results = runner.run(verbose=True)
 - `o1-mini` - o1 Mini
 
 ### Qiskit Code Assistant
-- `granite-8b-qiskit` - Granite 8B (Qiskit-tuned)
-- `granite-20b-qiskit` - Granite 20B (Qiskit-tuned)
+- `mistral-qiskit` - Mistral Small 3.2 24B (Qiskit-tuned)
 
 ## Results
 

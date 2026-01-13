@@ -105,14 +105,9 @@ MODELS = {
         model_id="o1-mini",
     ),
     # Qiskit Code Assistant
-    "granite-8b-qiskit": ModelConfig(
+    "mistral-qiskit": ModelConfig(
         provider=ProviderType.QISKIT_ASSISTANT,
-        model_id="granite-8b-qiskit",
-        base_url="https://qiskit-code-assistant.quantum.ibm.com",
-    ),
-    "granite-20b-qiskit": ModelConfig(
-        provider=ProviderType.QISKIT_ASSISTANT,
-        model_id="granite-20b-qiskit",
+        model_id="mistral-small-3.2-24b-qiskit",
         base_url="https://qiskit-code-assistant.quantum.ibm.com",
     ),
 }
