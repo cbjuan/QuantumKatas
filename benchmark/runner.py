@@ -263,8 +263,11 @@ def main():
     args = parser.parse_args()
 
     # Load models from config file or use built-in
+    # Priority: --config flag > models.json in cwd > built-in MODELS
     if args.config:
         models = load_config_file(args.config)
+    elif Path("models.json").exists():
+        models = load_config_file("models.json")
     else:
         models = MODELS
 

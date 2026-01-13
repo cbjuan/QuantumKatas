@@ -144,7 +144,7 @@ Access any model through a LiteLLM proxy for unified access:
 
 ## JSON Configuration
 
-You can define model configurations in a JSON file instead of code:
+Model configurations are defined in `models.json` at the project root. The CLI automatically loads this file if present.
 
 ### Config File Format
 
@@ -166,25 +166,27 @@ You can define model configurations in a JSON file instead of code:
 }
 ```
 
-See `benchmark/config_examples/models.json` for a complete example.
-
 ### Using JSON Config
 
 ```python
 from benchmark import load_models_from_json, BenchmarkRunner
 
 # Load models from JSON file
-models = load_models_from_json("my_models.json")
+models = load_models_from_json("models.json")
 
 # Use a model from the config
 runner = BenchmarkRunner(model_config=models["my-model"])
 results = runner.run()
 ```
 
-### CLI with Config File
+### CLI with Custom Config File
 
 ```bash
-qk-benchmark --model my-model --config my_models.json
+# Uses models.json by default if present
+qk-benchmark --model claude-sonnet
+
+# Or specify a custom config file
+qk-benchmark --model my-model --config custom_models.json
 ```
 
 ### Environment Variables

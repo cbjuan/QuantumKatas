@@ -35,6 +35,12 @@
     "max_tokens": 4096,
     "temperature": 0.0
   },
+  "o1-mini": {
+    "provider": "openai",
+    "model_id": "o1-mini",
+    "max_tokens": 4096,
+    "temperature": 0.0
+  },
   "o3-mini": {
     "provider": "openai",
     "model_id": "o3-mini",
@@ -57,20 +63,6 @@
     "provider": "qiskit_assistant",
     "model_id": "mistral-small-3.2-24b-qiskit",
     "base_url": "https://qiskit-code-assistant.quantum.ibm.com",
-    "max_tokens": 4096,
-    "temperature": 0.0
-  },
-  "litellm-claude": {
-    "provider": "litellm",
-    "model_id": "claude-sonnet-4-20250514",
-    "base_url": "http://localhost:4000/v1",
-    "max_tokens": 4096,
-    "temperature": 0.0
-  },
-  "vllm-qwen": {
-    "provider": "vllm",
-    "model_id": "Qwen/Qwen2.5-Coder-32B-Instruct",
-    "base_url": "http://localhost:8000/v1",
     "max_tokens": 4096,
     "temperature": 0.0
   }
