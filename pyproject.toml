@@ -23,6 +23,7 @@ dev = [
 
 [project.scripts]
 qk-benchmark = "benchmark.runner:main"
+qk-compare = "benchmark.reporter:main"
 
 [build-system]
 requires = ["hatchling"]

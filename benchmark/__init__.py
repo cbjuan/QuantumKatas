@@ -39,6 +39,10 @@ from .reporter import (
     generate_report,
     format_markdown_report,
     print_summary,
+    load_results,
+    load_all_results,
+    compare_reports,
+    compare_results_from_dir,
 )
 
 __version__ = "0.1.0"
@@ -79,4 +83,8 @@ __all__ = [
     "generate_report",
     "format_markdown_report",
     "print_summary",
+    "load_results",
+    "load_all_results",
+    "compare_reports",
+    "compare_results_from_dir",
 ]

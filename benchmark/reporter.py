@@ -46,6 +46,26 @@ def load_results(path: Path) -> dict:
         return json.load(f)
 
 
+def load_all_results(results_dir: Path) -> list[tuple[Path, dict]]:
+    """Load all benchmark results from a directory.
+
+    Returns list of (path, results) tuples sorted by model name.
+    """
+    results_dir = Path(results_dir)
+    results = []
+
+    for path in results_dir.glob("*.json"):
+        if path.name.startswith("checkpoint_"):
+            continue
+        try:
+            data = load_results(path)
+            results.append((path, data))
+        except (json.JSONDecodeError, KeyError):
+            continue
+
+    return sorted(results, key=lambda x: x[1].get("model_id", ""))
+
+
 def generate_report(results: dict) -> BenchmarkReport:
     """Generate a report from benchmark results."""
     # Calculate category stats
@@ -180,10 +200,12 @@ def save_report(
         f.write(content)
 
 
-def compare_reports(reports: list[BenchmarkReport]) -> str:
+def compare_reports(reports: list[BenchmarkReport], include_categories: bool = False) -> str:
     """Generate comparison table for multiple reports."""
     lines = [
         "# Model Comparison",
+        "",
+        "## Overall Results",
         "",
         "| Model | Pass Rate | Passed | Failed | Errors | Avg Latency |",
         "|-------|-----------|--------|--------|--------|-------------|",
@@ -195,7 +217,51 @@ def compare_reports(reports: list[BenchmarkReport]) -> str:
             f"{report.failed} | {report.errors} | {report.avg_latency_ms:.0f}ms |"
         )
 
+    if include_categories and reports:
+        # Get all categories across all reports
+        all_categories = set()
+        for report in reports:
+            for cat in report.categories:
+                all_categories.add(cat.name)
+
+        lines.extend([
+            "",
+            "## Results by Category",
+            "",
+        ])
+
+        # Header row with model names
+        header = "| Category |"
+        separator = "|----------|"
+        for report in sorted(reports, key=lambda r: r.model_id):
+            header += f" {report.model_id} |"
+            separator += "------------|"
+
+        lines.append(header)
+        lines.append(separator)
+
+        # Data rows
+        for cat_name in sorted(all_categories):
+            row = f"| {cat_name} |"
+            for report in sorted(reports, key=lambda r: r.model_id):
+                cat_stats = next((c for c in report.categories if c.name == cat_name), None)
+                if cat_stats:
+                    row += f" {cat_stats.pass_rate:.0%} ({cat_stats.passed}/{cat_stats.total}) |"
+                else:
+                    row += " - |"
+            lines.append(row)
+
     return "\n".join(lines)
+
+
+def compare_results_from_dir(results_dir: Path, include_categories: bool = True) -> str:
+    """Load all results from a directory and generate comparison."""
+    all_results = load_all_results(results_dir)
+    if not all_results:
+        return "No results found in directory."
+
+    reports = [generate_report(data) for _, data in all_results]
+    return compare_reports(reports, include_categories=include_categories)
 
 
 def print_summary(results: dict):
@@ -211,3 +277,72 @@ def print_summary(results: dict):
     for cat in report.categories:
         bar = "#" * int(cat.pass_rate * 20)
         print(f"  {cat.name:25} {cat.pass_rate:6.1%} [{bar:20}] ({cat.passed}/{cat.total})")
+
+
+def main():
+    """CLI entry point for comparing results."""
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(description="Compare quantum katas benchmark results")
+    parser.add_argument(
+        "--results-dir",
+        default="results",
+        help="Directory containing result JSON files (default: results)",
+    )
+    parser.add_argument(
+        "--output",
+        help="Output file for comparison report (default: print to stdout)",
+    )
+    parser.add_argument(
+        "--no-categories",
+        action="store_true",
+        help="Don't include per-category breakdown",
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List available result files",
+    )
+
+    args = parser.parse_args()
+    results_dir = Path(args.results_dir)
+
+    if not results_dir.exists():
+        print(f"Error: Results directory '{results_dir}' does not exist", file=sys.stderr)
+        sys.exit(1)
+
+    all_results = load_all_results(results_dir)
+
+    if args.list:
+        if not all_results:
+            print("No results found.")
+        else:
+            print(f"Found {len(all_results)} result files:\n")
+            for path, data in all_results:
+                report = generate_report(data)
+                print(f"  {path.name}")
+                print(f"    Model: {report.model_id}")
+                print(f"    Pass Rate: {report.pass_rate:.1%} ({report.passed}/{report.total_tasks})")
+                print()
+        sys.exit(0)
+
+    if not all_results:
+        print("No results found in directory.", file=sys.stderr)
+        sys.exit(1)
+
+    reports = [generate_report(data) for _, data in all_results]
+    comparison = compare_reports(reports, include_categories=not args.no_categories)
+
+    if args.output:
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w") as f:
+            f.write(comparison)
+        print(f"Comparison saved to: {output_path}")
+    else:
+        print(comparison)
+
+
+if __name__ == "__main__":
+    main()

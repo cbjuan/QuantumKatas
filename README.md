@@ -218,6 +218,38 @@ Results are saved in JSON format with:
 - Evaluation details (syntax errors, test failures)
 - Token usage and latency metrics
 
+### Comparing Multiple Runs
+
+After running benchmarks with different models, compare all results:
+
+```bash
+# List all available results
+qk-compare --list
+
+# Generate comparison table
+qk-compare
+
+# Save comparison to file
+qk-compare --output results/comparison.md
+
+# Compare without category breakdown
+qk-compare --no-categories
+```
+
+Or use the Python API:
+
+```python
+from benchmark import load_all_results, compare_results_from_dir
+
+# Quick comparison
+print(compare_results_from_dir("results"))
+
+# Load individual results for custom analysis
+all_results = load_all_results("results")
+for path, data in all_results:
+    print(f"{data['model_id']}: {data['pass_rate']:.1%}")
+```
+
 ### Generate Report
 
 ```python
