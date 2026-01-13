@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 # Load .env file if present
 load_dotenv()
 
-from .config import BenchmarkConfig, ModelConfig, get_model_config, load_config_file, MODELS
+from .config import BenchmarkConfig, ModelConfig, get_model_config, load_models_from_json, MODELS
 from .models import Provider, create_provider, GenerationResult
 from .evaluator import evaluate_solution, EvaluationResult
 
@@ -269,10 +269,11 @@ def main():
 
     # Load models from config file or use built-in
     # Priority: --config flag > models.json in cwd > built-in MODELS
+    # When using JSON config, only those models are available (no merging with built-ins)
     if args.config:
-        models = load_config_file(args.config)
+        models = load_models_from_json(args.config)
     elif Path("models.json").exists():
-        models = load_config_file("models.json")
+        models = load_models_from_json("models.json")
     else:
         models = MODELS
 
