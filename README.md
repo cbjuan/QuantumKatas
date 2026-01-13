@@ -22,11 +22,11 @@ The dataset contains **350 quantum computing tasks** across 26 categories, deriv
 ## Installation
 
 ```bash
-# Using pip
-pip install -e .
-
 # Using uv (recommended)
-uv pip install -e .
+uv sync
+
+# Or with pip
+pip install -e .
 ```
 
 ### Dependencies
@@ -44,18 +44,19 @@ uv pip install -e .
 
 ```bash
 # Run benchmark with Claude Sonnet
-export ANTHROPIC_API_KEY="your-key"
-qk-benchmark --model claude-sonnet --verbose
+uv run qk-benchmark --model claude-sonnet --verbose
 
 # Run benchmark with GPT-4o
-export OPENAI_API_KEY="your-key"
-qk-benchmark --model gpt-4o --verbose
+uv run qk-benchmark --model gpt-4o --verbose
 
 # Filter by category
-qk-benchmark --model claude-sonnet --categories BasicGates Superposition
+uv run qk-benchmark --model claude-sonnet --categories BasicGates Superposition
 
 # Filter by task IDs
-qk-benchmark --model claude-sonnet --task-ids "BasicGates/1" "BasicGates/2"
+uv run qk-benchmark --model claude-sonnet --task-ids "BasicGates/1" "BasicGates/2"
+
+# List available models
+uv run qk-benchmark --list-models
 ```
 
 ### Python API
@@ -224,16 +225,16 @@ After running benchmarks with different models, compare all results:
 
 ```bash
 # List all available results
-qk-compare --list
+uv run qk-compare --list
 
 # Generate comparison table
-qk-compare
+uv run qk-compare
 
 # Save comparison to file
-qk-compare --output results/comparison.md
+uv run qk-compare --output results/comparison.md
 
 # Compare without category breakdown
-qk-compare --no-categories
+uv run qk-compare --no-categories
 ```
 
 Or use the Python API:
