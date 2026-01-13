@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
+from typing import Callable, Optional
 import time
 
 from .config import ModelConfig, ProviderType
@@ -10,6 +10,39 @@ from .config import ModelConfig, ProviderType
 # Identifier for requests from this benchmark
 USER_AGENT = "quantum-katas-benchmark/0.1.0"
 X_CALLER = "quantum-katas-benchmark"
+
+# Retry configuration
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_RETRY_DELAY = 1.0  # seconds
+DEFAULT_RETRY_MULTIPLIER = 2.0  # exponential backoff multiplier
+
+# Error patterns that trigger retries
+RETRYABLE_ERROR_PATTERNS = [
+    "rate limit",
+    "rate_limit",
+    "429",
+    "too many requests",
+    "overloaded",
+    "capacity",
+    "500",
+    "502",
+    "503",
+    "504",
+    "internal server error",
+    "bad gateway",
+    "service unavailable",
+    "gateway timeout",
+    "timeout",
+    "timed out",
+    "connection error",
+    "connection reset",
+]
+
+
+def is_retryable_error(error: str) -> bool:
+    """Check if an error message indicates a retryable condition."""
+    error_lower = error.lower()
+    return any(pattern in error_lower for pattern in RETRYABLE_ERROR_PATTERNS)
 
 
 @dataclass
@@ -22,18 +55,48 @@ class GenerationResult:
     latency_ms: float
     model_id: str
     error: Optional[str] = None
+    retries: int = 0
 
 
 class Provider(ABC):
     """Abstract base class for LLM providers."""
 
-    def __init__(self, config: ModelConfig):
+    def __init__(
+        self,
+        config: ModelConfig,
+        max_retries: int = DEFAULT_MAX_RETRIES,
+        retry_delay: float = DEFAULT_RETRY_DELAY,
+        retry_multiplier: float = DEFAULT_RETRY_MULTIPLIER,
+    ):
         self.config = config
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+        self.retry_multiplier = retry_multiplier
 
     @abstractmethod
-    def generate(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
-        """Generate a response from the LLM."""
+    def _generate_impl(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
+        """Implementation of generate - subclasses override this."""
         pass
+
+    def generate(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
+        """Generate a response with automatic retries for transient errors."""
+        last_result = None
+        delay = self.retry_delay
+
+        for attempt in range(self.max_retries + 1):
+            result = self._generate_impl(prompt, system_prompt)
+            result.retries = attempt
+
+            if not result.error or not is_retryable_error(result.error):
+                return result
+
+            last_result = result
+
+            if attempt < self.max_retries:
+                time.sleep(delay)
+                delay *= self.retry_multiplier
+
+        return last_result
 
     @property
     def name(self) -> str:
@@ -59,7 +122,7 @@ class AnthropicProvider(Provider):
             },
         )
 
-    def generate(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
+    def _generate_impl(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
         start_time = time.time()
         error = None
         content = ""
@@ -116,7 +179,7 @@ class OpenAIProvider(Provider):
 
         self.client = OpenAI(**kwargs)
 
-    def generate(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
+    def _generate_impl(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
         start_time = time.time()
         error = None
         content = ""
@@ -189,7 +252,7 @@ class GoogleProvider(Provider):
         self.genai = genai
         self.model = genai.GenerativeModel(config.model_id)
 
-    def generate(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
+    def _generate_impl(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
         start_time = time.time()
         error = None
         content = ""
@@ -262,7 +325,7 @@ class QiskitAssistantProvider(Provider):
         self.requests = requests
         self.base_url = config.base_url or "https://qiskit-code-assistant.quantum.ibm.com"
 
-    def generate(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
+    def _generate_impl(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
         start_time = time.time()
         error = None
         content = ""
