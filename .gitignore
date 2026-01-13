@@ -1,4 +1,13 @@
-# Git ignore file for the Solid project
+# Quantum Katas Benchmark
+
+# Benchmark results (keep .gitkeep)
+results/*.json
+results/*.md
+results/*.csv
+!results/.gitkeep
+
+# Checkpoints
+checkpoint_*.json
 
 # Build artifacts
 bin/
