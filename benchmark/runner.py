@@ -496,6 +496,101 @@ ABLATION_CONFIGS = [
 ]
 
 
+def run_single_model_ablation(
+    model_name: str,
+    model_config: ModelConfig,
+    configs: list[tuple[str, str, str]],
+    dataset_path: Path,
+    output_dir: Path,
+    categories: Optional[list[str]],
+    task_ids: Optional[list[str]],
+    verbose: bool,
+    num_runs: int,
+    aggregate_method: str,
+    progress_queue=None,
+) -> dict:
+    """Run ablation study for a single model. Used for parallel execution.
+
+    Args:
+        model_name: Name of the model
+        model_config: Model configuration
+        configs: List of (strategy, system_prompt, description) tuples
+        dataset_path: Path to dataset
+        output_dir: Output directory for results
+        categories: Optional category filter
+        task_ids: Optional task ID filter
+        verbose: Whether to print progress
+        num_runs: Number of runs per task
+        aggregate_method: How to aggregate multiple runs
+        progress_queue: Optional queue for progress updates
+
+    Returns:
+        Dictionary with model results for all configurations
+    """
+    run_config = RunConfig(
+        num_runs=num_runs,
+        aggregate_method=aggregate_method,
+    )
+
+    model_results = []
+
+    if progress_queue:
+        progress_queue.put((model_name, "STARTED", 0, len(configs), None))
+
+    for config_idx, (strategy, system_prompt, desc) in enumerate(configs):
+        if progress_queue:
+            progress_queue.put((model_name, "CONFIG", config_idx, len(configs), desc))
+
+        prompt_config = PromptConfig(
+            strategy=PromptStrategy(strategy),
+            system_prompt=system_prompt,
+        )
+
+        config = BenchmarkConfig(
+            model=model_config,
+            dataset_path=dataset_path,
+            output_dir=output_dir,
+            categories=categories,
+            task_ids=task_ids,
+            verbose=verbose and not progress_queue,
+            prompt=prompt_config,
+            runs=run_config,
+        )
+
+        runner = BenchmarkRunner(config=config)
+        results = runner.run()
+
+        # Save with descriptive filename
+        safe_strategy = strategy.replace("_", "-")
+        output_file = output_dir / f"{model_name}_{safe_strategy}_{system_prompt}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        results.save(output_file)
+
+        model_results.append({
+            "strategy": strategy,
+            "system_prompt": system_prompt,
+            "description": desc,
+            "pass_rate": results.pass_rate,
+            "passed": results.passed_tasks,
+            "total": results.completed_tasks,
+            "output_file": str(output_file),
+        })
+
+        if progress_queue:
+            progress_queue.put((
+                model_name, "RESULT", config_idx + 1, len(configs),
+                f"{desc}: {results.pass_rate:.1%}"
+            ))
+
+    if progress_queue:
+        progress_queue.put((model_name, "DONE", len(configs), len(configs), None))
+
+    return {
+        "model": model_name,
+        "model_id": model_config.model_id,
+        "results": model_results,
+    }
+
+
 def run_ablation_study(
     models_to_run: list[str],
     models: dict[str, ModelConfig],
@@ -505,7 +600,7 @@ def run_ablation_study(
     """Run ablation study across all prompting configurations.
 
     Runs each model with each prompting strategy combination and produces
-    a summary comparison at the end.
+    a summary comparison at the end. Supports parallel execution with --parallel.
     """
     from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -519,12 +614,17 @@ def run_ablation_study(
         configs = ABLATION_CONFIGS
 
     total_runs = len(models_to_run) * len(configs)
+    parallel = args.parallel is not None and len(models_to_run) > 1
+
     print(f"\n{'='*70}")
-    print("ABLATION STUDY")
+    print("ABLATION STUDY" + (" (PARALLEL)" if parallel else ""))
     print(f"{'='*70}")
     print(f"Models: {', '.join(models_to_run)}")
     print(f"Configurations: {len(configs)}")
     print(f"Total benchmark runs: {total_runs}")
+    if parallel:
+        max_workers = args.parallel if args.parallel > 0 else len(models_to_run)
+        print(f"Parallel workers: {max_workers}")
     print(f"{'='*70}\n")
 
     # Print configurations to run
@@ -534,66 +634,143 @@ def run_ablation_study(
     print()
 
     all_results = []
-    run_config = RunConfig(
-        num_runs=args.num_runs,
-        aggregate_method=args.aggregate,
-    )
 
-    run_count = 0
-    for model_name in models_to_run:
-        model_config = models[model_name]
-        model_results = []
+    if parallel:
+        # Parallel execution across models
+        from multiprocessing import Manager
+        import threading
 
-        print(f"\n{'='*60}")
-        print(f"Model: {model_name} ({model_config.model_id})")
-        print(f"{'='*60}")
+        max_workers = args.parallel if args.parallel > 0 else len(models_to_run)
 
-        for strategy, system_prompt, desc in configs:
-            run_count += 1
-            print(f"\n[{run_count}/{total_runs}] {desc}...")
+        manager = Manager()
+        progress_queue = manager.Queue()
+        stop_progress = threading.Event()
 
-            prompt_config = PromptConfig(
-                strategy=PromptStrategy(strategy),
-                system_prompt=system_prompt,
-            )
+        # Track progress per model
+        model_progress = {name: {"current": 0, "total": len(configs), "status": "waiting"} for name in models_to_run}
 
-            config = BenchmarkConfig(
-                model=model_config,
-                dataset_path=Path(args.dataset),
-                output_dir=output_dir,
-                categories=args.categories,
-                task_ids=args.task_ids,
-                verbose=not args.quiet,
-                prompt=prompt_config,
-                runs=run_config,
-            )
+        def progress_monitor(queue):
+            """Monitor progress queue and update display."""
+            while not stop_progress.is_set():
+                try:
+                    msg = queue.get(timeout=0.5)
+                    if msg is None:
+                        break
+                    model_name, status, current, total, info = msg
 
-            runner = BenchmarkRunner(config=config)
-            results = runner.run(debug=args.debug)
+                    if status == "STARTED":
+                        print(f"  [{model_name}] Started ablation study ({total} configs)", flush=True)
+                    elif status == "CONFIG":
+                        print(f"  [{model_name}] Running config {current + 1}/{total}: {info}", flush=True)
+                    elif status == "RESULT":
+                        print(f"  [{model_name}] Completed {current}/{total} - {info}", flush=True)
+                    elif status == "DONE":
+                        print(f"  [{model_name}] Completed all configurations", flush=True)
+                except Exception:
+                    pass
 
-            # Save with descriptive filename
-            safe_strategy = strategy.replace("_", "-")
-            output_file = output_dir / f"{model_name}_{safe_strategy}_{system_prompt}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-            results.save(output_file)
+        # Start progress monitor thread
+        monitor_thread = threading.Thread(target=progress_monitor, args=(progress_queue,), daemon=True)
+        monitor_thread.start()
 
-            model_results.append({
-                "strategy": strategy,
-                "system_prompt": system_prompt,
-                "description": desc,
-                "pass_rate": results.pass_rate,
-                "passed": results.passed_tasks,
-                "total": results.completed_tasks,
-                "output_file": str(output_file),
+        print(f"Starting parallel ablation with {max_workers} workers...\n")
+
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(
+                    run_single_model_ablation,
+                    model_name,
+                    models[model_name],
+                    configs,
+                    Path(args.dataset),
+                    output_dir,
+                    args.categories,
+                    args.task_ids,
+                    not args.quiet,
+                    args.num_runs,
+                    args.aggregate,
+                    progress_queue,
+                ): model_name
+                for model_name in models_to_run
+            }
+
+            for future in as_completed(futures):
+                model_name = futures[future]
+                try:
+                    result = future.result()
+                    all_results.append(result)
+                    best_rate = max(r["pass_rate"] for r in result["results"])
+                    print(f"\n[{model_name}] COMPLETED - Best: {best_rate:.1%}")
+                except Exception as e:
+                    print(f"\n[{model_name}] FAILED: {e}")
+
+        # Stop progress monitor
+        stop_progress.set()
+        progress_queue.put(None)
+        monitor_thread.join(timeout=1.0)
+
+    else:
+        # Sequential execution
+        run_count = 0
+        for model_name in models_to_run:
+            model_config = models[model_name]
+            model_results = []
+
+            print(f"\n{'='*60}")
+            print(f"Model: {model_name} ({model_config.model_id})")
+            print(f"{'='*60}")
+
+            for strategy, system_prompt, desc in configs:
+                run_count += 1
+                print(f"\n[{run_count}/{total_runs}] {desc}...")
+
+                prompt_config = PromptConfig(
+                    strategy=PromptStrategy(strategy),
+                    system_prompt=system_prompt,
+                )
+
+                run_config = RunConfig(
+                    num_runs=args.num_runs,
+                    aggregate_method=args.aggregate,
+                )
+
+                config = BenchmarkConfig(
+                    model=model_config,
+                    dataset_path=Path(args.dataset),
+                    output_dir=output_dir,
+                    categories=args.categories,
+                    task_ids=args.task_ids,
+                    verbose=not args.quiet,
+                    prompt=prompt_config,
+                    runs=run_config,
+                )
+
+                runner = BenchmarkRunner(config=config)
+                results = runner.run(debug=args.debug)
+
+                # Save with descriptive filename
+                safe_strategy = strategy.replace("_", "-")
+                output_file = output_dir / f"{model_name}_{safe_strategy}_{system_prompt}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                results.save(output_file)
+
+                model_results.append({
+                    "strategy": strategy,
+                    "system_prompt": system_prompt,
+                    "description": desc,
+                    "pass_rate": results.pass_rate,
+                    "passed": results.passed_tasks,
+                    "total": results.completed_tasks,
+                    "output_file": str(output_file),
+                })
+
+                print(f"  Pass rate: {results.pass_rate:.1%} ({results.passed_tasks}/{results.completed_tasks})")
+                print(f"  Saved to: {output_file}")
+
+            all_results.append({
+                "model": model_name,
+                "model_id": model_config.model_id,
+                "results": model_results,
             })
-
-            print(f"  Pass rate: {results.pass_rate:.1%} ({results.passed_tasks}/{results.completed_tasks})")
-            print(f"  Saved to: {output_file}")
-
-        all_results.append({
-            "model": model_name,
-            "model_id": model_config.model_id,
-            "results": model_results,
-        })
 
     # Print summary
     print(f"\n\n{'='*70}")
@@ -606,7 +783,7 @@ def run_ablation_study(
     print(header)
     print(separator)
 
-    for model_data in all_results:
+    for model_data in sorted(all_results, key=lambda x: x["model"]):
         row = f"| {model_data['model'][:15]} |"
         for result in model_data["results"]:
             row += f" {result['pass_rate']:.0%} |"
@@ -616,7 +793,6 @@ def run_ablation_study(
 
     # Save ablation summary
     summary_file = output_dir / f"ablation_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    import json
     with open(summary_file, "w") as f:
         json.dump({
             "models": models_to_run,
