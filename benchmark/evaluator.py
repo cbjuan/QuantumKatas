@@ -26,10 +26,11 @@ def extract_code_from_response(response: str) -> str:
     """Extract Python code from LLM response.
 
     Handles markdown code blocks, triple-quoted strings, and raw code.
+    Also handles malformed responses with unclosed code blocks.
     """
     response = response.strip()
 
-    # Try to extract from markdown code block
+    # Try to extract from markdown code block (properly closed)
     patterns = [
         r"```python\n(.*?)```",
         r"```py\n(.*?)```",
@@ -37,6 +38,19 @@ def extract_code_from_response(response: str) -> str:
     ]
 
     for pattern in patterns:
+        match = re.search(pattern, response, re.DOTALL)
+        if match:
+            return match.group(1).strip()
+
+    # Handle unclosed code blocks (model started code block but didn't close it)
+    # This catches cases like: ```python\ncode... (no closing ```)
+    unclosed_patterns = [
+        r"```python\n(.*)$",
+        r"```py\n(.*)$",
+        r"```\n(.*)$",
+    ]
+
+    for pattern in unclosed_patterns:
         match = re.search(pattern, response, re.DOTALL)
         if match:
             return match.group(1).strip()
