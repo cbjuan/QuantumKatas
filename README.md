@@ -211,6 +211,122 @@ Available variables:
 
 The `.env` file is automatically loaded when running the benchmark.
 
+## Statistical Analysis & Multiple Runs
+
+For statistically rigorous evaluation, the benchmark supports multiple runs per task with various aggregation methods.
+
+### Recommended Settings
+
+| Use Case | `--num-runs` | `--aggregate` | Notes |
+|----------|--------------|---------------|-------|
+| Quick exploration | 1 | - | Fast, good for initial testing |
+| Published results | 3-5 | `majority` | Recommended for papers |
+| High confidence | 5-10 | `majority` | Tighter confidence intervals |
+| pass@k metrics | 10+ | `any` | For computing pass@1, pass@5, etc. |
+
+### Multiple Runs
+
+```bash
+# Run each task 3 times, pass if majority succeed
+uv run qk-benchmark --model claude-sonnet --num-runs 3 --aggregate majority
+
+# Run 5 times, pass if any attempt succeeds (for pass@k estimation)
+uv run qk-benchmark --model claude-sonnet --num-runs 5 --aggregate any
+
+# Run 3 times, pass only if all attempts succeed (strict)
+uv run qk-benchmark --model claude-sonnet --num-runs 3 --aggregate all
+```
+
+**Aggregation methods:**
+- `majority` (default): Pass if >50% of runs succeed. Best for robust estimates.
+- `any`: Pass if at least one run succeeds. Use for pass@k metrics.
+- `all`: Pass only if every run succeeds. Very strict evaluation.
+
+### Prompting Strategies
+
+The benchmark supports different prompting approaches:
+
+```bash
+# Zero-shot (default)
+uv run qk-benchmark --model claude-sonnet --prompt-strategy zero_shot
+
+# Few-shot with 1, 3, or 5 examples
+uv run qk-benchmark --model claude-sonnet --prompt-strategy few_shot_3
+
+# Chain-of-thought prompting
+uv run qk-benchmark --model claude-sonnet --prompt-strategy chain_of_thought
+```
+
+### System Prompt Variants
+
+```bash
+# Default: Balanced instructions
+uv run qk-benchmark --model claude-sonnet --system-prompt default
+
+# Minimal: Brief instructions
+uv run qk-benchmark --model claude-sonnet --system-prompt minimal
+
+# Detailed: Comprehensive Qiskit guidance
+uv run qk-benchmark --model claude-sonnet --system-prompt detailed
+```
+
+### Ablation Studies
+
+Run all prompting strategy combinations automatically:
+
+```bash
+# Full ablation study (7 configurations)
+uv run qk-benchmark --model claude-sonnet --ablation
+
+# Ablation with multiple runs for statistical rigor
+uv run qk-benchmark --model claude-sonnet --ablation --num-runs 3
+
+# Filter to specific strategies
+uv run qk-benchmark --model claude-sonnet --ablation --ablation-strategies zero_shot few_shot_3
+
+# Multi-model ablation
+uv run qk-benchmark --all --ablation
+```
+
+The ablation study runs these configurations:
+1. Zero-shot + default prompt
+2. Zero-shot + minimal prompt
+3. Zero-shot + detailed prompt
+4. 1-shot + default prompt
+5. 3-shot + default prompt
+6. 5-shot + default prompt
+7. Chain-of-thought + CoT prompt
+
+Results are saved with descriptive filenames and a summary JSON is generated.
+
+### Confidence Intervals
+
+Results include 95% Wilson score confidence intervals:
+
+```python
+from benchmark import load_results, generate_report
+
+results = load_results("results/claude-sonnet.json")
+report = generate_report(results)
+
+print(f"Pass rate: {report.pass_rate:.1%}")
+print(f"95% CI: [{report.stats.ci_lower:.1%}, {report.stats.ci_upper:.1%}]")
+```
+
+### Statistical Comparison
+
+Compare models with statistical significance testing:
+
+```python
+from benchmark import load_all_results, generate_report, format_statistical_comparison
+
+all_results = load_all_results("results")
+reports = [generate_report(data) for _, data in all_results]
+
+# Generate comparison with CIs and significance info
+print(format_statistical_comparison(reports))
+```
+
 ## Results
 
 Results are saved in JSON format with:
