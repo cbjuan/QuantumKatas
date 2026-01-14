@@ -43,20 +43,48 @@ pip install -e .
 ### Command Line
 
 ```bash
-# Run benchmark with Claude Sonnet
-uv run qk-benchmark --model claude-sonnet --verbose
+# Run benchmark with a specific model
+uv run qk-benchmark --model claude-sonnet
 
-# Run benchmark with GPT-4o
-uv run qk-benchmark --model gpt-4o --verbose
+# List available models
+uv run qk-benchmark --list-models
 
 # Filter by category
 uv run qk-benchmark --model claude-sonnet --categories BasicGates Superposition
 
-# Filter by task IDs
-uv run qk-benchmark --model claude-sonnet --task-ids "BasicGates/1" "BasicGates/2"
+# Filter by specific task IDs
+uv run qk-benchmark --model claude-sonnet --task-ids "BasicGates/1.1" "BasicGates/1.2"
 
-# List available models
-uv run qk-benchmark --list-models
+# Save results to custom directory
+uv run qk-benchmark --model claude-sonnet --output results/experiment1
+```
+
+### Parallel Execution
+
+Run multiple models simultaneously:
+
+```bash
+# Run all configured models in parallel
+uv run qk-benchmark --all --parallel
+
+# Limit parallel workers (useful for rate limits)
+uv run qk-benchmark --all --parallel 2
+
+# Parallel with specific models from config
+uv run qk-benchmark --model claude-sonnet --model gpt-4o --parallel
+```
+
+### Debug & Quiet Modes
+
+```bash
+# Debug mode: show raw model responses for failed tasks
+uv run qk-benchmark --model claude-sonnet --debug
+
+# Quiet mode: suppress task-by-task output (useful for scripts)
+uv run qk-benchmark --model claude-sonnet --quiet
+
+# Combine: quiet overall but debug failures
+uv run qk-benchmark --model claude-sonnet -q -d
 ```
 
 ### Python API
