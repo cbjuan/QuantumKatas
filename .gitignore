@@ -7,6 +7,9 @@
 results/*.json
 results/*.md
 results/*.csv
+results/*/*.json
+results/*/*.md
+results/*/*.csv
 !results/.gitkeep
 
 # Checkpoints
