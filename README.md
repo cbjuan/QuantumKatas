@@ -38,154 +38,51 @@ pip install -e .
 - openai >= 1.0.0 (for GPT/vLLM models)
 - google-generativeai >= 0.8.0 (for Gemini models)
 
-## Usage
-
-### Command Line
+## Quick Start
 
 ```bash
-# Run benchmark with a specific model
+# Run benchmark with a model
 uv run qk-benchmark --model claude-sonnet
 
 # List available models
 uv run qk-benchmark --list-models
-
-# Filter by category
-uv run qk-benchmark --model claude-sonnet --categories BasicGates Superposition
-
-# Filter by specific task IDs
-uv run qk-benchmark --model claude-sonnet --task-ids "BasicGates/1.1" "BasicGates/1.2"
-
-# Save results to custom directory
-uv run qk-benchmark --model claude-sonnet --output results/experiment1
 ```
 
-### Parallel Execution
+## Configuration
 
-Run multiple models simultaneously:
+### Environment Variables
+
+API keys are configured via environment variables. Create a `.env` file:
 
 ```bash
-# Run all configured models in parallel
-uv run qk-benchmark --all --parallel
-
-# Limit parallel workers (useful for rate limits)
-uv run qk-benchmark --all --parallel 2
-
-# Parallel with specific models from config
-uv run qk-benchmark --model claude-sonnet --model gpt-4o --parallel
+cp .env.example .env
+# Edit .env with your credentials
 ```
 
-### Debug & Quiet Modes
+| Variable | Provider |
+|----------|----------|
+| `ANTHROPIC_API_KEY` | Anthropic Claude |
+| `OPENAI_API_KEY` | OpenAI GPT |
+| `GOOGLE_API_KEY` | Google Gemini |
+| `VLLM_API_KEY` | vLLM (optional, defaults to "dummy") |
+| `LITELLM_API_KEY` | LiteLLM proxy |
+| `QISKIT_ASSISTANT_TOKEN` | IBM Qiskit Code Assistant |
 
-```bash
-# Debug mode: show raw model responses for failed tasks
-uv run qk-benchmark --model claude-sonnet --debug
+The `.env` file is automatically loaded when running the benchmark.
 
-# Quiet mode: suppress task-by-task output (useful for scripts)
-uv run qk-benchmark --model claude-sonnet --quiet
+### JSON Configuration
 
-# Combine: quiet overall but debug failures
-uv run qk-benchmark --model claude-sonnet -q -d
-```
-
-### Python API
-
-```python
-from benchmark import BenchmarkRunner, ModelConfig, ProviderType
-
-# Using predefined model
-from benchmark import get_model_config
-
-config = get_model_config("claude-sonnet")
-runner = BenchmarkRunner(model_config=config)
-results = runner.run(verbose=True)
-results.save("results/claude-sonnet.json")
-
-# Custom model configuration
-config = ModelConfig(
-    provider=ProviderType.OPENAI,
-    model_id="gpt-4o",
-    temperature=0.0,
-)
-runner = BenchmarkRunner(model_config=config)
-results = runner.run()
-```
-
-### Using vLLM
-
-```python
-from benchmark import BenchmarkRunner, ModelConfig, ProviderType
-
-config = ModelConfig(
-    provider=ProviderType.VLLM,
-    model_id="Qwen/Qwen2.5-Coder-32B-Instruct",
-    base_url="http://localhost:8000/v1",
-)
-runner = BenchmarkRunner(model_config=config)
-results = runner.run(verbose=True)
-```
-
-### Using Qiskit Code Assistant
-
-```python
-from benchmark import BenchmarkRunner, ModelConfig, ProviderType
-
-config = ModelConfig(
-    provider=ProviderType.QISKIT_ASSISTANT,
-    model_id="mistral-small-3.2-24b-qiskit",
-    api_key="your-ibm-token",
-)
-runner = BenchmarkRunner(model_config=config)
-results = runner.run(verbose=True)
-```
-
-## Available Models
-
-### Anthropic
-- `claude-opus` - Claude Opus 4
-- `claude-sonnet` - Claude Sonnet 4
-- `claude-haiku` - Claude Haiku 4
-
-### OpenAI
-- `gpt-4o` - GPT-4o
-- `gpt-4o-mini` - GPT-4o Mini
-- `o1` - o1 (reasoning model)
-- `o1-mini` - o1 Mini
-- `o3-mini` - o3 Mini (latest reasoning model)
-
-### Google Gemini
-- `gemini-2.5-pro` - Gemini 2.5 Pro (state-of-the-art reasoning)
-- `gemini-2.5-flash` - Gemini 2.5 Flash (fast, balanced)
-
-### Qiskit Code Assistant
-- `mistral-qiskit` - Mistral Small 3.2 24B (Qiskit-tuned)
-
-### Open Source (via vLLM)
-You can also benchmark open-source models via vLLM:
-- DeepSeek-V3.2 / DeepSeek-Coder
-- Qwen2.5-Coder / Qwen3-Coder
-- Code Llama
-- Any model with OpenAI-compatible API
-
-### LiteLLM Proxy
-Access any model through a LiteLLM proxy for unified access:
-- Any model supported by LiteLLM
-- Useful for accessing multiple providers through a single endpoint
-
-## JSON Configuration
-
-Model configurations are defined in `models.json` at the project root. The CLI automatically loads this file if present.
-
-### Config File Format
+Models can be configured in `models.json` at the project root. The CLI loads this file automatically.
 
 ```json
 {
-  "my-model": {
+  "my-claude": {
     "provider": "anthropic",
     "model_id": "claude-sonnet-4-20250514",
     "max_tokens": 4096,
     "temperature": 0.0
   },
-  "my-vllm-model": {
+  "my-vllm": {
     "provider": "vllm",
     "model_id": "Qwen/Qwen2.5-Coder-32B-Instruct",
     "base_url": "http://localhost:8000/v1",
@@ -195,137 +92,190 @@ Model configurations are defined in `models.json` at the project root. The CLI a
 }
 ```
 
-### Using JSON Config
+Supported providers: `anthropic`, `openai`, `google`, `vllm`, `litellm`, `qiskit_assistant`
+
+### Custom Headers
+
+Some endpoints require custom HTTP headers for authentication. Header values can reference environment variables:
+
+```json
+{
+  "my-model": {
+    "provider": "vllm",
+    "model_id": "ibm-granite/granite-4.0-h-small",
+    "base_url": "https://inference.example.com/granite-4-h-small/v1",
+    "max_tokens": 4096,
+    "temperature": 0.0,
+    "headers": {
+      "API_KEY": "VLLM_API_KEY"
+    }
+  }
+}
+```
+
+The `VLLM_API_KEY` environment variable is resolved at runtime and sent as the `API_KEY` header.
+
+**vLLM Example:**
+
+```json
+{
+  "granite-4.0-h-small": {
+    "provider": "vllm",
+    "model_id": "ibm-granite/granite-4.0-h-small",
+    "base_url": "https://<vllm-url>/granite-4-h-small/v1",
+    "max_tokens": 4096,
+    "temperature": 0.0,
+    "headers": {
+      "API_KEY": "VLLM_API_KEY"
+    }
+  }
+}
+```
+
+**Note:** Base URLs for OpenAI-compatible endpoints must end with `/v1`.
+
+## Available Models
+
+### Built-in Models
+
+| Provider | Model Key | Description |
+|----------|-----------|-------------|
+| Anthropic | `claude-opus` | Claude Opus 4 |
+| Anthropic | `claude-sonnet` | Claude Sonnet 4 |
+| Anthropic | `claude-haiku` | Claude Haiku 4 |
+| OpenAI | `gpt-4o` | GPT-4o |
+| OpenAI | `gpt-4o-mini` | GPT-4o Mini |
+| OpenAI | `o1`, `o1-mini`, `o3-mini` | Reasoning models |
+| Google | `gemini-2.5-pro` | Gemini 2.5 Pro |
+| Google | `gemini-2.5-flash` | Gemini 2.5 Flash |
+| IBM | `mistral-qiskit` | Mistral Small 3.2 24B (Qiskit-tuned) |
+
+### Open Source via vLLM
+
+Any model with an OpenAI-compatible API:
+- DeepSeek-V3 / DeepSeek-Coder
+- Qwen2.5-Coder / Qwen3-Coder
+- Llama 4, Code Llama
+- Granite, Mistral, Phi-4
+
+### LiteLLM Proxy
+
+Access 100+ models through a unified LiteLLM proxy endpoint.
+
+## Usage
+
+### Command Line
+
+```bash
+# Basic usage
+uv run qk-benchmark --model claude-sonnet
+
+# Filter by category
+uv run qk-benchmark --model claude-sonnet --categories BasicGates Superposition
+
+# Filter by task IDs
+uv run qk-benchmark --model claude-sonnet --task-ids "BasicGates/1.1" "BasicGates/1.2"
+
+# Custom output directory
+uv run qk-benchmark --model claude-sonnet --output results/experiment1
+
+# Use custom config file
+uv run qk-benchmark --model my-model --config custom_models.json
+```
+
+### Debug & Quiet Modes
+
+```bash
+# Debug: show raw responses for failed tasks
+uv run qk-benchmark --model claude-sonnet --debug
+
+# Quiet: suppress task-by-task output
+uv run qk-benchmark --model claude-sonnet --quiet
+
+# Combine both
+uv run qk-benchmark --model claude-sonnet -q -d
+```
+
+### Parallel Execution
+
+```bash
+# Run all models in parallel
+uv run qk-benchmark --all --parallel
+
+# Limit workers (useful for rate limits)
+uv run qk-benchmark --all --parallel 2
+
+# Parallel with ablation study (each model runs all 7 configs in its own worker)
+uv run qk-benchmark --all --parallel --ablation
+
+# Parallel ablation with worker limit and multiple runs
+uv run qk-benchmark --all --parallel 4 --ablation --num-runs 3
+```
+
+### Python API
 
 ```python
-from benchmark import load_models_from_json, BenchmarkRunner
+from benchmark import BenchmarkRunner, ModelConfig, ProviderType, get_model_config
 
-# Load models from JSON file
-models = load_models_from_json("models.json")
+# Using a built-in model
+config = get_model_config("claude-sonnet")
+runner = BenchmarkRunner(model_config=config)
+results = runner.run(verbose=True)
+results.save("results/claude-sonnet.json")
 
-# Use a model from the config
-runner = BenchmarkRunner(model_config=models["my-model"])
+# Custom configuration
+config = ModelConfig(
+    provider=ProviderType.OPENAI,
+    model_id="gpt-4o",
+    temperature=0.0,
+)
+runner = BenchmarkRunner(model_config=config)
 results = runner.run()
+
+# vLLM with custom headers
+config = ModelConfig(
+    provider=ProviderType.VLLM,
+    model_id="ibm-granite/granite-4.0-h-small",
+    base_url="https://inference.example.com/granite-4-h-small/v1",
+    headers={"API_KEY": "VLLM_API_KEY"},
+)
+
+# Load from JSON config
+from benchmark import load_models_from_json
+models = load_models_from_json("models.json")
+runner = BenchmarkRunner(model_config=models["my-model"])
 ```
 
-### CLI with Custom Config File
-
-```bash
-# Uses models.json by default if present
-qk-benchmark --model claude-sonnet
-
-# Or specify a custom config file
-qk-benchmark --model my-model --config custom_models.json
-```
-
-### Environment Variables
-
-API keys and URLs are configured via environment variables. Create a `.env` file from the template:
-
-```bash
-cp .env.example .env
-# Edit .env with your credentials
-```
-
-Available variables:
-- `ANTHROPIC_API_KEY` - Anthropic Claude
-- `OPENAI_API_KEY` - OpenAI GPT
-- `GOOGLE_API_KEY` - Google Gemini
-- `LITELLM_API_KEY` - LiteLLM proxy API key
-- `LITELLM_BASE_URL` - LiteLLM base URL (default: http://localhost:4000/v1)
-- `VLLM_API_KEY` - vLLM API key (optional, defaults to "dummy")
-- `VLLM_BASE_URL` - vLLM base URL (e.g., http://localhost:8000/v1)
-- `QISKIT_ASSISTANT_TOKEN` - IBM Qiskit Code Assistant
-
-The `.env` file is automatically loaded when running the benchmark.
-
-## Statistical Analysis & Multiple Runs
-
-For statistically rigorous evaluation, the benchmark supports multiple runs per task with various aggregation methods.
-
-### Recommended Settings
-
-| Use Case | `--num-runs` | `--aggregate` | Notes |
-|----------|--------------|---------------|-------|
-| Quick exploration | 1 | - | Fast, good for initial testing |
-| Published results | 3-5 | `majority` | Recommended for papers |
-| High confidence | 5-10 | `majority` | Tighter confidence intervals |
-| pass@k metrics | 10+ | `any` | For computing pass@1, pass@5, etc. |
+## Statistical Analysis
 
 ### Multiple Runs
 
+For statistically rigorous evaluation, run each task multiple times:
+
 ```bash
-# Run each task 3 times, pass if majority succeed
+# Majority voting (recommended)
 uv run qk-benchmark --model claude-sonnet --num-runs 3 --aggregate majority
 
-# Run 5 times, pass if any attempt succeeds (for pass@k estimation)
+# Any pass (for pass@k metrics)
 uv run qk-benchmark --model claude-sonnet --num-runs 5 --aggregate any
 
-# Run 3 times, pass only if all attempts succeed (strict)
+# All must pass (strict)
 uv run qk-benchmark --model claude-sonnet --num-runs 3 --aggregate all
 ```
 
-**Aggregation methods:**
-- `majority` (default): Pass if >50% of runs succeed. Best for robust estimates.
-- `any`: Pass if at least one run succeeds. Use for pass@k metrics.
-- `all`: Pass only if every run succeeds. Very strict evaluation.
+| Aggregation | Behavior | Use Case |
+|-------------|----------|----------|
+| `majority` | Pass if >50% succeed | Robust estimates |
+| `any` | Pass if any succeeds | pass@k metrics |
+| `all` | Pass only if all succeed | Strict evaluation |
 
-### Prompting Strategies
+### Recommended Settings
 
-The benchmark supports different prompting approaches:
-
-```bash
-# Zero-shot (default)
-uv run qk-benchmark --model claude-sonnet --prompt-strategy zero_shot
-
-# Few-shot with 1, 3, or 5 examples
-uv run qk-benchmark --model claude-sonnet --prompt-strategy few_shot_3
-
-# Chain-of-thought prompting
-uv run qk-benchmark --model claude-sonnet --prompt-strategy chain_of_thought
-```
-
-### System Prompt Variants
-
-```bash
-# Default: Balanced instructions
-uv run qk-benchmark --model claude-sonnet --system-prompt default
-
-# Minimal: Brief instructions
-uv run qk-benchmark --model claude-sonnet --system-prompt minimal
-
-# Detailed: Comprehensive Qiskit guidance
-uv run qk-benchmark --model claude-sonnet --system-prompt detailed
-```
-
-### Ablation Studies
-
-Run all prompting strategy combinations automatically:
-
-```bash
-# Full ablation study (7 configurations)
-uv run qk-benchmark --model claude-sonnet --ablation
-
-# Ablation with multiple runs for statistical rigor
-uv run qk-benchmark --model claude-sonnet --ablation --num-runs 3
-
-# Filter to specific strategies
-uv run qk-benchmark --model claude-sonnet --ablation --ablation-strategies zero_shot few_shot_3
-
-# Multi-model ablation
-uv run qk-benchmark --all --ablation
-```
-
-The ablation study runs these configurations:
-1. Zero-shot + default prompt
-2. Zero-shot + minimal prompt
-3. Zero-shot + detailed prompt
-4. 1-shot + default prompt
-5. 3-shot + default prompt
-6. 5-shot + default prompt
-7. Chain-of-thought + CoT prompt
-
-Results are saved with descriptive filenames and a summary JSON is generated.
+| Use Case | `--num-runs` | `--aggregate` |
+|----------|--------------|---------------|
+| Quick exploration | 1 | - |
+| Published results | 3-5 | `majority` |
+| pass@k metrics | 10+ | `any` |
 
 ### Confidence Intervals
 
@@ -341,79 +291,110 @@ print(f"Pass rate: {report.pass_rate:.1%}")
 print(f"95% CI: [{report.stats.ci_lower:.1%}, {report.stats.ci_upper:.1%}]")
 ```
 
-### Statistical Comparison
+## Prompting Strategies
 
-Compare models with statistical significance testing:
-
-```python
-from benchmark import load_all_results, generate_report, format_statistical_comparison
-
-all_results = load_all_results("results")
-reports = [generate_report(data) for _, data in all_results]
-
-# Generate comparison with CIs and significance info
-print(format_statistical_comparison(reports))
-```
-
-## Results
-
-Results are saved in JSON format with:
-- Pass/fail status for each task
-- Generated code
-- Evaluation details (syntax errors, test failures)
-- Token usage and latency metrics
-
-### Comparing Multiple Runs
-
-After running benchmarks with different models, compare all results:
+### Strategy Options
 
 ```bash
-# List all available results
+# Zero-shot (default)
+uv run qk-benchmark --model claude-sonnet --prompt-strategy zero_shot
+
+# Few-shot with examples
+uv run qk-benchmark --model claude-sonnet --prompt-strategy few_shot_3
+
+# Chain-of-thought
+uv run qk-benchmark --model claude-sonnet --prompt-strategy chain_of_thought
+```
+
+### System Prompts
+
+```bash
+# Default: balanced instructions
+uv run qk-benchmark --model claude-sonnet --system-prompt default
+
+# Minimal: brief instructions
+uv run qk-benchmark --model claude-sonnet --system-prompt minimal
+
+# Detailed: comprehensive Qiskit guidance
+uv run qk-benchmark --model claude-sonnet --system-prompt detailed
+```
+
+### Ablation Studies
+
+Run all prompting combinations automatically:
+
+```bash
+# Full ablation (7 configurations)
+uv run qk-benchmark --model claude-sonnet --ablation
+
+# With multiple runs
+uv run qk-benchmark --model claude-sonnet --ablation --num-runs 3
+
+# Specific strategies only
+uv run qk-benchmark --model claude-sonnet --ablation --ablation-strategies zero_shot few_shot_3
+
+# Parallel ablation across all models
+uv run qk-benchmark --all --parallel --ablation
+
+# Parallel ablation with worker limit
+uv run qk-benchmark --all --parallel 4 --ablation --num-runs 3
+```
+
+Configurations tested:
+1. Zero-shot + default/minimal/detailed prompts
+2. Few-shot (1, 3, 5 examples) + default prompt
+3. Chain-of-thought + CoT prompt
+
+When using `--parallel` with `--ablation`, each model runs its full ablation study in a separate worker process.
+
+## Results & Reporting
+
+Results are saved as JSON with pass/fail status, generated code, evaluation details, and metrics.
+
+### Compare Models
+
+```bash
+# List available results
 uv run qk-compare --list
 
 # Generate comparison table
 uv run qk-compare
 
-# Save comparison to file
+# Save to file
 uv run qk-compare --output results/comparison.md
-
-# Compare without category breakdown
-uv run qk-compare --no-categories
 ```
 
-Or use the Python API:
+### Generate Reports
 
 ```python
-from benchmark import load_all_results, compare_results_from_dir
+from benchmark import (
+    load_results,
+    load_all_results,
+    generate_report,
+    format_markdown_report,
+    format_statistical_comparison,
+)
 
-# Quick comparison
-print(compare_results_from_dir("results"))
-
-# Load individual results for custom analysis
-all_results = load_all_results("results")
-for path, data in all_results:
-    print(f"{data['model_id']}: {data['pass_rate']:.1%}")
-```
-
-### Generate Report
-
-```python
-from benchmark import load_results, generate_report, format_markdown_report
-
+# Single model report
 results = load_results("results/claude-sonnet.json")
 report = generate_report(results)
 print(format_markdown_report(report))
+
+# Compare all models
+all_results = load_all_results("results")
+reports = [generate_report(data) for _, data in all_results]
+print(format_statistical_comparison(reports))
 ```
 
 ## Dataset Format
 
-Each task in `dataset/quantum_katas.jsonl` has:
+Each task in `dataset/quantum_katas.jsonl`:
 
 ```json
 {
-  "task_id": "BasicGates/1",
-  "prompt": "# Task 1. State flip\n# Input: A qubit in state |ψ⟩ = α|0⟩ + β|1⟩\n# Goal: Change the state to α|1⟩ + β|0⟩...",
-  "canonical_solution": "from qiskit import QuantumCircuit\n\ndef state_flip(qc, q):\n    qc.x(q)\n    return qc",
+  "task_id": "BasicGates/1.1",
+  "prompt": "# Task: State flip\n# Input: A qubit in state |ψ⟩ = α|0⟩ + β|1⟩\n# Goal: Change the state to α|1⟩ + β|0⟩...",
+  "canonical_solution": "def state_flip(qc, q):\n    qc.x(q)\n    return qc",
   "test": "def test_state_flip():\n    qc = QuantumCircuit(1)\n    ...",
   "entry_point": "state_flip"
 }
