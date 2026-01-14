@@ -29,6 +29,7 @@ class ModelConfig:
     base_url: Optional[str] = None
     max_tokens: int = 4096
     temperature: float = 0.0
+    headers: Optional[dict[str, str]] = None
 
     def __post_init__(self):
         """Load API key from environment if not provided."""
@@ -227,6 +228,7 @@ def model_config_from_dict(data: dict) -> ModelConfig:
         base_url=data.get("base_url"),
         max_tokens=data.get("max_tokens", 4096),
         temperature=data.get("temperature", 0.0),
+        headers=data.get("headers"),
     )
 
 
@@ -268,13 +270,16 @@ def save_models_to_json(path: Union[str, Path], models: Optional[dict[str, Model
     path = Path(path)
     data = {}
     for name, config in models.items():
-        data[name] = {
+        model_data = {
             "provider": config.provider.value,
             "model_id": config.model_id,
             "base_url": config.base_url,
             "max_tokens": config.max_tokens,
             "temperature": config.temperature,
         }
+        if config.headers:
+            model_data["headers"] = config.headers
+        data[name] = model_data
 
     with open(path, "w") as f:
         json.dump(data, f, indent=2)

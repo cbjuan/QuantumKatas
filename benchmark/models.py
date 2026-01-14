@@ -16,6 +16,19 @@ DEFAULT_MAX_RETRIES = 3
 DEFAULT_RETRY_DELAY = 1.0  # seconds
 DEFAULT_RETRY_MULTIPLIER = 2.0  # exponential backoff multiplier
 
+
+def resolve_header_value(value: str) -> str:
+    """Resolve header value, substituting environment variables.
+
+    If the value matches an environment variable name, return the env var value.
+    This allows configs like {"API_KEY": "VLLM_API_KEY"} to resolve to the actual key.
+    """
+    import os
+    env_value = os.environ.get(value)
+    if env_value:
+        return env_value
+    return value
+
 # Error patterns that trigger retries
 RETRYABLE_ERROR_PATTERNS = [
     "rate limit",
@@ -114,12 +127,19 @@ class AnthropicProvider(Provider):
         except ImportError:
             raise ImportError("anthropic package required: pip install anthropic")
 
+        # Build headers, merging defaults with any custom headers from config
+        # Resolve env var references in header values
+        headers = {
+            "User-Agent": USER_AGENT,
+            "X-Caller": X_CALLER,
+        }
+        if config.headers:
+            resolved_headers = {k: resolve_header_value(v) for k, v in config.headers.items()}
+            headers.update(resolved_headers)
+
         self.client = Anthropic(
             api_key=config.api_key,
-            default_headers={
-                "User-Agent": USER_AGENT,
-                "X-Caller": X_CALLER,
-            },
+            default_headers=headers,
         )
 
     def _generate_impl(self, prompt: str, system_prompt: Optional[str] = None) -> GenerationResult:
@@ -167,12 +187,19 @@ class OpenAIProvider(Provider):
         except ImportError:
             raise ImportError("openai package required: pip install openai")
 
+        # Build headers, merging defaults with any custom headers from config
+        # Resolve env var references in header values
+        headers = {
+            "User-Agent": USER_AGENT,
+            "X-Caller": X_CALLER,
+        }
+        if config.headers:
+            resolved_headers = {k: resolve_header_value(v) for k, v in config.headers.items()}
+            headers.update(resolved_headers)
+
         kwargs = {
             "api_key": config.api_key,
-            "default_headers": {
-                "User-Agent": USER_AGENT,
-                "X-Caller": X_CALLER,
-            },
+            "default_headers": headers,
         }
         if config.base_url:
             kwargs["base_url"] = config.base_url
