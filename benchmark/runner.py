@@ -12,15 +12,65 @@ from dotenv import load_dotenv
 # Load .env file if present
 load_dotenv()
 
-from .config import BenchmarkConfig, ModelConfig, get_model_config, load_models_from_json, MODELS
+from .config import (
+    BenchmarkConfig,
+    ModelConfig,
+    get_model_config,
+    load_models_from_json,
+    MODELS,
+    PromptStrategy,
+    PromptConfig,
+    RunConfig,
+    SYSTEM_PROMPTS,
+)
 from .models import Provider, create_provider, GenerationResult
 from .evaluator import evaluate_solution, EvaluationResult
 
 
-SYSTEM_PROMPT = """You are an expert quantum computing programmer specializing in Qiskit.
-Your task is to implement quantum computing functions using Qiskit.
-Provide ONLY the Python code implementation, no explanations.
-The code should be complete and ready to execute."""
+def load_few_shot_examples(dataset_path: Path, n: int, exclude_ids: list[str] = None) -> list[dict]:
+    """Load n few-shot examples from the dataset.
+
+    Args:
+        dataset_path: Path to the JSONL dataset
+        n: Number of examples to load
+        exclude_ids: Task IDs to exclude (e.g., the current task being evaluated)
+
+    Returns:
+        List of {prompt, solution} dicts
+    """
+    exclude_ids = exclude_ids or []
+    examples = []
+
+    with open(dataset_path) as f:
+        for line in f:
+            data = json.loads(line)
+            if data["task_id"] in exclude_ids:
+                continue
+            # Prefer simpler tasks for examples
+            if data["task_id"].startswith(("BasicGates/", "Superposition/")):
+                examples.append({
+                    "prompt": data["prompt"],
+                    "solution": data["canonical_solution"],
+                })
+            if len(examples) >= n:
+                break
+
+    return examples
+
+
+def format_few_shot_prompt(task_prompt: str, examples: list[dict]) -> str:
+    """Format a prompt with few-shot examples."""
+    parts = ["Here are some examples of quantum computing implementations:\n"]
+
+    for i, ex in enumerate(examples, 1):
+        parts.append(f"Example {i}:")
+        parts.append(f"Task: {ex['prompt'][:200]}...")
+        parts.append(f"Solution:\n```python\n{ex['solution']}\n```\n")
+
+    parts.append("Now implement the following:\n")
+    parts.append(task_prompt)
+
+    return "\n".join(parts)
 
 
 @dataclass
@@ -155,6 +205,68 @@ class BenchmarkRunner:
                         continue
                 self.tasks.append(task)
 
+    def _prepare_prompt(self, task: Task) -> tuple[str, str]:
+        """Prepare the prompt and system prompt for a task.
+
+        Returns:
+            (task_prompt, system_prompt)
+        """
+        system_prompt = self.config.prompt.get_system_prompt()
+        task_prompt = task.prompt
+
+        # Handle few-shot prompting
+        strategy = self.config.prompt.strategy
+        if strategy in (PromptStrategy.FEW_SHOT_1, PromptStrategy.FEW_SHOT_3, PromptStrategy.FEW_SHOT_5):
+            n_examples = int(strategy.value.split("_")[-1])
+            examples = self.config.prompt.few_shot_examples
+            if not examples:
+                # Load examples from dataset
+                examples = load_few_shot_examples(
+                    self.config.dataset_path,
+                    n=n_examples,
+                    exclude_ids=[task.task_id],
+                )
+            task_prompt = format_few_shot_prompt(task.prompt, examples[:n_examples])
+
+        return task_prompt, system_prompt
+
+    def _run_single_task(self, task: Task, run_idx: int = 0) -> tuple[GenerationResult, EvaluationResult]:
+        """Run a single task and return generation and evaluation results."""
+        task_prompt, system_prompt = self._prepare_prompt(task)
+
+        # Adjust temperature for multiple runs
+        original_temp = self.model_config.temperature
+        if self.config.runs.num_runs > 1 and run_idx > 0:
+            # Use slightly different temperatures for variance
+            temps = self.config.runs.temperatures
+            if len(temps) > 1:
+                self.model_config.temperature = temps[run_idx % len(temps)]
+            else:
+                # Add small variance for multiple runs
+                self.model_config.temperature = min(0.3, 0.1 * run_idx)
+
+        generation = self.provider.generate(task_prompt, system_prompt)
+
+        # Restore temperature
+        self.model_config.temperature = original_temp
+
+        if generation.error:
+            evaluation = EvaluationResult(
+                passed=False,
+                syntax_valid=False,
+                test_passed=False,
+                error_message=f"Generation error: {generation.error}",
+            )
+        else:
+            evaluation = evaluate_solution(
+                code=generation.content,
+                test_code=task.test,
+                entry_point=task.entry_point,
+                timeout=self.config.evaluation.timeout_seconds,
+            )
+
+        return generation, evaluation
+
     def run(
         self,
         verbose: Optional[bool] = None,
@@ -172,6 +284,8 @@ class BenchmarkRunner:
         """
         verbose = verbose if verbose is not None else self.config.verbose
         model_name = model_name or self.model_config.model_id
+        num_runs = self.config.runs.num_runs
+
         results = BenchmarkResults(
             model_id=self.model_config.model_id,
             provider=self.model_config.provider.value,
@@ -184,30 +298,55 @@ class BenchmarkRunner:
             start_time=datetime.now().isoformat(),
         )
 
+        # Store run metadata
+        results_metadata = {
+            "num_runs": num_runs,
+            "prompt_strategy": self.config.prompt.strategy.value,
+            "system_prompt": self.config.prompt.system_prompt,
+        }
+
         checkpoint_path = self.config.output_dir / f"checkpoint_{self.model_config.model_id}.json"
 
         for i, task in enumerate(self.tasks):
             if verbose:
                 print(f"[{i+1}/{len(self.tasks)}] {task.task_id}...", end=" ", flush=True)
 
-            # Generate solution
-            generation = self.provider.generate(task.prompt, SYSTEM_PROMPT)
+            # Run task (potentially multiple times)
+            all_runs = []
+            for run_idx in range(num_runs):
+                generation, evaluation = self._run_single_task(task, run_idx)
+                all_runs.append((generation, evaluation))
 
-            # Evaluate solution
-            if generation.error:
-                evaluation = EvaluationResult(
-                    passed=False,
-                    syntax_valid=False,
-                    test_passed=False,
-                    error_message=f"Generation error: {generation.error}",
-                )
+            # Aggregate results from multiple runs
+            if num_runs > 1:
+                passed_runs = sum(1 for _, ev in all_runs if ev.passed)
+                aggregate = self.config.runs.aggregate_method
+
+                if aggregate == "majority":
+                    final_passed = passed_runs > num_runs // 2
+                elif aggregate == "any":
+                    final_passed = passed_runs > 0
+                elif aggregate == "all":
+                    final_passed = passed_runs == num_runs
+                else:
+                    final_passed = all_runs[0][1].passed
+
+                # Use the first passing run, or the first run if none passed
+                best_idx = next((i for i, (_, ev) in enumerate(all_runs) if ev.passed), 0)
+                generation, evaluation = all_runs[best_idx]
+
+                # Override passed status based on aggregation
+                if final_passed != evaluation.passed:
+                    evaluation = EvaluationResult(
+                        passed=final_passed,
+                        syntax_valid=evaluation.syntax_valid,
+                        test_passed=final_passed,
+                        error_message=evaluation.error_message,
+                        error_type=evaluation.error_type,
+                        stdout=evaluation.stdout,
+                    )
             else:
-                evaluation = evaluate_solution(
-                    code=generation.content,
-                    test_code=task.test,
-                    entry_point=task.entry_point,
-                    timeout=self.config.evaluation.timeout_seconds,
-                )
+                generation, evaluation = all_runs[0]
 
             task_result = TaskResult(
                 task_id=task.task_id,
@@ -277,13 +416,7 @@ class BenchmarkRunner:
         if verbose:
             print(f"Running {task_id}...")
 
-        generation = self.provider.generate(task.prompt, SYSTEM_PROMPT)
-        evaluation = evaluate_solution(
-            code=generation.content,
-            test_code=task.test,
-            entry_point=task.entry_point,
-            timeout=self.config.evaluation.timeout_seconds,
-        )
+        generation, evaluation = self._run_single_task(task)
 
         return TaskResult(
             task_id=task.task_id,
@@ -303,8 +436,12 @@ def run_single_model_benchmark(
     task_ids: Optional[list[str]],
     verbose: bool,
     progress_queue=None,
+    prompt_config: Optional[PromptConfig] = None,
+    run_config: Optional[RunConfig] = None,
 ) -> tuple[str, Path, float]:
     """Run benchmark for a single model. Used for parallel execution."""
+    from .config import PromptConfig, RunConfig
+
     # When using progress queue, don't print verbose output (use queue instead)
     use_verbose = verbose and not progress_queue
 
@@ -315,6 +452,8 @@ def run_single_model_benchmark(
         categories=categories,
         task_ids=task_ids,
         verbose=use_verbose,
+        prompt=prompt_config or PromptConfig(),
+        runs=run_config or RunConfig(),
     )
 
     runner = BenchmarkRunner(config=config)
@@ -344,6 +483,149 @@ def run_single_model_benchmark(
     return model_name, output_file, results.pass_rate
 
 
+# Ablation study configurations
+ABLATION_CONFIGS = [
+    # (strategy, system_prompt, description)
+    ("zero_shot", "default", "Zero-shot with default prompt"),
+    ("zero_shot", "minimal", "Zero-shot with minimal prompt"),
+    ("zero_shot", "detailed", "Zero-shot with detailed prompt"),
+    ("few_shot_1", "default", "1-shot with default prompt"),
+    ("few_shot_3", "default", "3-shot with default prompt"),
+    ("few_shot_5", "default", "5-shot with default prompt"),
+    ("chain_of_thought", "chain_of_thought", "Chain-of-thought prompting"),
+]
+
+
+def run_ablation_study(
+    models_to_run: list[str],
+    models: dict[str, ModelConfig],
+    args,
+    output_dir: Path,
+):
+    """Run ablation study across all prompting configurations.
+
+    Runs each model with each prompting strategy combination and produces
+    a summary comparison at the end.
+    """
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+
+    # Filter configs if specific strategies requested
+    if args.ablation_strategies:
+        configs = [
+            (s, p, d) for s, p, d in ABLATION_CONFIGS
+            if s in args.ablation_strategies
+        ]
+    else:
+        configs = ABLATION_CONFIGS
+
+    total_runs = len(models_to_run) * len(configs)
+    print(f"\n{'='*70}")
+    print("ABLATION STUDY")
+    print(f"{'='*70}")
+    print(f"Models: {', '.join(models_to_run)}")
+    print(f"Configurations: {len(configs)}")
+    print(f"Total benchmark runs: {total_runs}")
+    print(f"{'='*70}\n")
+
+    # Print configurations to run
+    print("Configurations:")
+    for i, (strategy, system_prompt, desc) in enumerate(configs, 1):
+        print(f"  {i}. {desc} ({strategy} + {system_prompt})")
+    print()
+
+    all_results = []
+    run_config = RunConfig(
+        num_runs=args.num_runs,
+        aggregate_method=args.aggregate,
+    )
+
+    run_count = 0
+    for model_name in models_to_run:
+        model_config = models[model_name]
+        model_results = []
+
+        print(f"\n{'='*60}")
+        print(f"Model: {model_name} ({model_config.model_id})")
+        print(f"{'='*60}")
+
+        for strategy, system_prompt, desc in configs:
+            run_count += 1
+            print(f"\n[{run_count}/{total_runs}] {desc}...")
+
+            prompt_config = PromptConfig(
+                strategy=PromptStrategy(strategy),
+                system_prompt=system_prompt,
+            )
+
+            config = BenchmarkConfig(
+                model=model_config,
+                dataset_path=Path(args.dataset),
+                output_dir=output_dir,
+                categories=args.categories,
+                task_ids=args.task_ids,
+                verbose=not args.quiet,
+                prompt=prompt_config,
+                runs=run_config,
+            )
+
+            runner = BenchmarkRunner(config=config)
+            results = runner.run(debug=args.debug)
+
+            # Save with descriptive filename
+            safe_strategy = strategy.replace("_", "-")
+            output_file = output_dir / f"{model_name}_{safe_strategy}_{system_prompt}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            results.save(output_file)
+
+            model_results.append({
+                "strategy": strategy,
+                "system_prompt": system_prompt,
+                "description": desc,
+                "pass_rate": results.pass_rate,
+                "passed": results.passed_tasks,
+                "total": results.completed_tasks,
+                "output_file": str(output_file),
+            })
+
+            print(f"  Pass rate: {results.pass_rate:.1%} ({results.passed_tasks}/{results.completed_tasks})")
+            print(f"  Saved to: {output_file}")
+
+        all_results.append({
+            "model": model_name,
+            "model_id": model_config.model_id,
+            "results": model_results,
+        })
+
+    # Print summary
+    print(f"\n\n{'='*70}")
+    print("ABLATION STUDY SUMMARY")
+    print(f"{'='*70}\n")
+
+    # Create summary table
+    header = "| Model | " + " | ".join(c[0][:8] for c in configs) + " |"
+    separator = "|" + "---|" * (len(configs) + 1)
+    print(header)
+    print(separator)
+
+    for model_data in all_results:
+        row = f"| {model_data['model'][:15]} |"
+        for result in model_data["results"]:
+            row += f" {result['pass_rate']:.0%} |"
+        print(row)
+
+    print()
+
+    # Save ablation summary
+    summary_file = output_dir / f"ablation_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    import json
+    with open(summary_file, "w") as f:
+        json.dump({
+            "models": models_to_run,
+            "configurations": [{"strategy": s, "system_prompt": p, "description": d} for s, p, d in configs],
+            "results": all_results,
+        }, f, indent=2)
+    print(f"Summary saved to: {summary_file}")
+
+
 def main():
     """CLI entry point."""
     import argparse
@@ -367,6 +649,48 @@ def main():
         const=0,
         default=None,
         help="Run models in parallel (optionally specify max workers, default: number of models)",
+    )
+
+    # Prompting options
+    parser.add_argument(
+        "--prompt-strategy",
+        choices=["zero_shot", "few_shot_1", "few_shot_3", "few_shot_5", "chain_of_thought"],
+        default="zero_shot",
+        help="Prompting strategy (default: zero_shot)",
+    )
+    parser.add_argument(
+        "--system-prompt",
+        choices=["default", "minimal", "detailed", "chain_of_thought"],
+        default="default",
+        help="System prompt variant (default: default)",
+    )
+
+    # Multiple runs options
+    parser.add_argument(
+        "--num-runs",
+        type=int,
+        default=1,
+        help="Number of runs per task for statistical analysis (default: 1)",
+    )
+    parser.add_argument(
+        "--aggregate",
+        choices=["majority", "any", "all"],
+        default="majority",
+        help="How to aggregate multiple runs: majority, any, all (default: majority)",
+    )
+
+    # Ablation study options
+    parser.add_argument(
+        "--ablation",
+        action="store_true",
+        help="Run all prompting strategy combinations (ignores --prompt-strategy and --system-prompt)",
+    )
+    parser.add_argument(
+        "--ablation-strategies",
+        nargs="+",
+        choices=["zero_shot", "few_shot_1", "few_shot_3", "few_shot_5", "chain_of_thought"],
+        default=None,
+        help="Specific strategies to include in ablation (default: all)",
     )
 
     args = parser.parse_args()
@@ -406,6 +730,26 @@ def main():
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Handle ablation mode - run all prompting combinations
+    if args.ablation:
+        run_ablation_study(
+            models_to_run=models_to_run,
+            models=models,
+            args=args,
+            output_dir=output_dir,
+        )
+        sys.exit(0)
+
+    # Create prompt and run configs from CLI args (shared across all models)
+    prompt_config = PromptConfig(
+        strategy=PromptStrategy(args.prompt_strategy),
+        system_prompt=args.system_prompt,
+    )
+    run_config = RunConfig(
+        num_runs=args.num_runs,
+        aggregate_method=args.aggregate,
+    )
+
     # Run benchmark for each model
     if args.parallel is not None and len(models_to_run) > 1:
         # Parallel execution with progress tracking
@@ -414,6 +758,9 @@ def main():
 
         max_workers = args.parallel if args.parallel > 0 else len(models_to_run)
         print(f"\nRunning {len(models_to_run)} models in parallel (max workers: {max_workers})...")
+        print(f"Strategy: {args.prompt_strategy}, System prompt: {args.system_prompt}")
+        if args.num_runs > 1:
+            print(f"Runs per task: {args.num_runs}, Aggregate: {args.aggregate}")
 
         stop_progress = threading.Event()
 
@@ -457,6 +804,8 @@ def main():
                     args.task_ids,
                     not args.quiet,
                     progress_queue,
+                    prompt_config,
+                    run_config,
                 ): model_name
                 for model_name in models_to_run
             }
@@ -493,11 +842,16 @@ def main():
                 categories=args.categories,
                 task_ids=args.task_ids,
                 verbose=not args.quiet,
+                prompt=prompt_config,
+                runs=run_config,
             )
 
             runner = BenchmarkRunner(config=config)
             print(f"\nRunning benchmark with {model_name} ({model_config.model_id})...")
             print(f"Tasks: {len(runner.tasks)}")
+            print(f"Strategy: {args.prompt_strategy}, System prompt: {args.system_prompt}")
+            if args.num_runs > 1:
+                print(f"Runs per task: {args.num_runs}, Aggregate: {args.aggregate}")
 
             results = runner.run(debug=args.debug)
 

@@ -46,6 +46,76 @@ class ModelConfig:
                 self.api_key = os.environ.get(env_var)
 
 
+class PromptStrategy(Enum):
+    """Prompting strategies for evaluation."""
+
+    ZERO_SHOT = "zero_shot"
+    FEW_SHOT_1 = "few_shot_1"
+    FEW_SHOT_3 = "few_shot_3"
+    FEW_SHOT_5 = "few_shot_5"
+    CHAIN_OF_THOUGHT = "chain_of_thought"
+
+
+# Default system prompts
+SYSTEM_PROMPTS = {
+    "default": """You are an expert quantum computing programmer specializing in Qiskit.
+Your task is to implement quantum computing functions using Qiskit.
+Provide ONLY the Python code implementation, no explanations.
+The code should be complete and ready to execute.""",
+
+    "minimal": """Implement the following Qiskit function. Output only Python code.""",
+
+    "detailed": """You are an expert quantum computing programmer with deep knowledge of Qiskit, quantum algorithms, and quantum mechanics.
+
+Your task is to implement quantum computing functions using Qiskit (version 1.0+).
+
+Requirements:
+- Use standard Qiskit imports (QuantumCircuit, QuantumRegister, etc.)
+- Implement the exact function signature provided
+- Return the modified QuantumCircuit
+- Use appropriate quantum gates from qiskit.circuit.library if needed
+
+Provide ONLY the Python code implementation, no explanations or markdown.""",
+
+    "chain_of_thought": """You are an expert quantum computing programmer specializing in Qiskit.
+Your task is to implement quantum computing functions using Qiskit.
+
+First, briefly think through the quantum operations needed, then provide the implementation.
+Format your response as:
+THINKING: <your reasoning>
+CODE:
+```python
+<your code>
+```""",
+}
+
+
+@dataclass
+class PromptConfig:
+    """Configuration for prompting strategy."""
+
+    strategy: PromptStrategy = PromptStrategy.ZERO_SHOT
+    system_prompt: str = "default"  # key in SYSTEM_PROMPTS or custom string
+    few_shot_examples: Optional[list[dict]] = None  # For few-shot, list of {prompt, solution}
+    include_imports: bool = False  # Whether to include common imports in prompt
+
+    def get_system_prompt(self) -> str:
+        """Get the actual system prompt string."""
+        if self.system_prompt in SYSTEM_PROMPTS:
+            return SYSTEM_PROMPTS[self.system_prompt]
+        return self.system_prompt
+
+
+@dataclass
+class RunConfig:
+    """Configuration for multiple runs and statistical analysis."""
+
+    num_runs: int = 1  # Number of runs per task
+    temperatures: list[float] = field(default_factory=lambda: [0.0])  # Temperatures to test
+    seed: Optional[int] = None  # Base seed for reproducibility
+    aggregate_method: str = "majority"  # How to aggregate: "majority", "any", "all"
+
+
 @dataclass
 class EvaluationConfig:
     """Configuration for code evaluation."""
@@ -64,6 +134,8 @@ class BenchmarkConfig:
     dataset_path: Path = field(default_factory=lambda: Path("dataset/quantum_katas.jsonl"))
     output_dir: Path = field(default_factory=lambda: Path("results"))
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
+    prompt: PromptConfig = field(default_factory=PromptConfig)
+    runs: RunConfig = field(default_factory=RunConfig)
     checkpoint_interval: int = 10
     task_ids: Optional[list[str]] = None
     categories: Optional[list[str]] = None
